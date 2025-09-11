@@ -1,0 +1,19 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Login</title><link rel="stylesheet" th:href="@{/css/app.css}"/></head>
+<body>
+<header><h1>Taplist Login</h1></header>
+<main>
+  <form method="post" th:action="@{/login}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <p><label>Username <input type="text" name="username" required/></label></p>
+    <p><label>Password <input type="password" name="password" required/></label></p>
+    <p><button type="submit">Log in</button></p>
+    <p th:if="${param.error}" class="error">Login failed. Please try again.</p>
+    <p th:if="${param.logout}" class="info">You have been logged out.</p>
+  </form>
+</main>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

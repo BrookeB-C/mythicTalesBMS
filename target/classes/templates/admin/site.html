@@ -1,0 +1,14 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Site Admin</title><link rel="stylesheet" th:href="@{/css/app.css}"/></head>
+<body>
+<header><h1>Site Admin</h1></header>
+<main>
+  <h2>Breweries</h2>
+  <ul><li th:each="b : ${breweries}" th:text="${b.name}">Brewery</li></ul>
+  <h2>Bars</h2>
+  <ul><li th:each="b : ${bars}" th:text="${b.name}">Bar</li></ul>
+</main>
+<div th:replace="fragments/footer :: footer"></div>
+</body></html>
