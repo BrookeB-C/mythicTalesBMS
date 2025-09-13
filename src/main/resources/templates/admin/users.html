@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Users</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+  <style>
+    .muted { color:#6b7280; }
+    .nowrap { white-space: nowrap; }
+    table.table { width: 100%; border-collapse: collapse; }
+    table.table th, table.table td { padding: .5rem .6rem; border-bottom: 1px solid #e5e7eb; }
+    table.table th { text-align: left; background: #f3f4f6; }
+  </style>
+  </head>
+<body>
+<header>
+  <h1>Users</h1>
+  <p class="muted">Admin-only view of all accounts and their associations.</p>
+  <p><a class="btn" th:href="@{/admin/site}">⟵ Back to Site Admin</a></p>
+  </header>
+<main>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Brewery</th>
+        <th>Taproom</th>
+        <th>Bar</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="u : ${users}">
+        <td class="nowrap" th:text="${u.username}">username</td>
+        <td class="nowrap" th:text="${u.role}">ROLE</td>
+        <td th:text="${u.brewery != null ? u.brewery.name : '-'}">-</td>
+        <td th:text="${u.taproom != null ? u.taproom.name : '-'}">-</td>
+        <td th:text="${u.bar != null ? u.bar.name : '-'}">-</td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>
+

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Venue Admin — ' + ${venue != null ? venue.name : 'Unknown'}">Venue Admin</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body>
+<header>
+  <h1 th:text="'Venue Admin — ' + ${venue != null ? venue.name : 'Unknown'}">Venue Admin</h1>
+  <div class="toolbar">
+    <a class="btn" th:if="${venue != null}" th:href="@{'/admin/venue/' + ${venue.id} + '/events'}">View Events</a>
+    <a class="btn ghost" th:if="${venue != null}" th:href="@{'/taplist?venueId=' + ${venue.id}}">View Taplist</a>
+  </div>
+  <p><a class="btn" th:href="@{/admin/brewery}">⟵ Back to Brewery Admin</a></p>
+  </header>
+<main>
+  <h2>Taps</h2>
+  <table class="table">
+    <thead><tr><th>#</th><th>Beer</th><th>%</th></tr></thead>
+    <tbody>
+      <tr th:each="t : ${taps}">
+        <td th:text="${t.number}">1</td>
+        <td>
+          <span th:if="${t.keg != null}" th:text="${t.keg.beer.name}">Beer</span>
+          <span th:if="${t.keg == null}"><em>Empty</em></span>
+        </td>
+        <td th:text="${t.keg != null ? t.keg.fillPercent : 0}">0</td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

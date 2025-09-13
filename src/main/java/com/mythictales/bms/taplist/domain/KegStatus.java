@@ -1,2 +1,4 @@
 package com.mythictales.bms.taplist.domain;
-public enum KegStatus { UNTAPPED, TAPPED, EMPTY }
+public enum KegStatus {
+    EMPTY, CLEAN, FILLED, DISTRIBUTED, RECEIVED, TAPPED, BLOWN, RETURNED
+}

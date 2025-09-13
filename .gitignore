@@ -1,0 +1,45 @@
+# Build output
+target/
+**/target/
+build/
+out/
+bin/
+
+# Logs
+*.log
+logs/
+server.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/project files
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated/
+
+# Env/config overrides
+.env
+.env.*
+*.local
+
+# Embedded DB artifacts
+*.h2.db
+*.mv.db
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Caches
+.cache/
+
+# Test artifacts
+jacoco.exec
+surefire-reports/

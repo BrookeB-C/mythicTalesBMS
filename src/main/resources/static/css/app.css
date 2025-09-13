@@ -21,6 +21,20 @@ input, select { width: 100%; max-width: 22rem; padding:.45rem .5rem; border-radi
 .muted { color:#8a95ad; }
 .actions { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
 
+/* Brewery Admin tabs, chips, badges */
+.tabs { display:flex; gap:.5rem; margin:.75rem 0 1rem; flex-wrap: wrap; }
+.tabs a { padding:.4rem .7rem; border-radius:8px; text-decoration:none; color:#cbd5e1; background:#111726; border:1px solid #222a3a; }
+.tabs a.active { background:#13203a; color:#9cc0ff; border-color:#2a3a5c; }
+.chip { display:inline-block; padding:.2rem .5rem; border:1px solid #2a2f3a; border-radius:999px; margin-left:.35rem; color:#cbd5e1; text-decoration:none; }
+.chip.active { background:#13203a; border-color:#2a3a5c; color:#9cc0ff; }
+.badge { display:inline-block; padding:.15rem .4rem; border-radius:6px; font-size:.85rem; }
+.badge.green { background:#114632; color:#9ef3c6; }
+.badge.blue { background:#102643; color:#9cc0ff; }
+.badge.purple { background:#1e123f; color:#cbb6ff; }
+.badge.orange { background:#3a2312; color:#ffd3a6; }
+.badge.red { background:#3a1212; color:#ffb4b4; }
+.badge.gray { background:#1c2432; color:#cbd5e1; }
+
 /* Fill bar with smooth shading by percentage */
 .fillbar { position: relative; width: 180px; height: 14px; background:#141926; border:1px solid #2b3447; border-radius: 999px; overflow:hidden; }
 .fillbar .fill {

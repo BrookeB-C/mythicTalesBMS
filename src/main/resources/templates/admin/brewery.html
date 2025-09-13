@@ -5,8 +5,199 @@
 <body>
 <header><h1>Brewery Admin</h1></header>
 <main>
-  <h2>Your Taprooms</h2>
-  <ul><li th:each="t : ${taprooms}" th:text="${t.name}">Taproom</li></ul>
+  <!-- Brewery info always at top -->
+  <section>
+    <h2 th:text="${brewery != null ? brewery.name : 'Your Brewery'}">Your Brewery</h2>
+    <form method="post" action="#" th:action="@{/admin/brewery/updateInfo}" class="inline">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>Name <input type="text" name="name" th:value="${brewery != null ? brewery.name : ''}"/></label>
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </section>
+
+  <!-- Tabs below general information -->
+  <div class="tabs">
+    <a th:classappend="${(tab == null or tab == 'taprooms') ? ' active' : ''}"
+       th:href="@{/admin/brewery(tab='taprooms')}">Taprooms</a>
+    <a th:classappend="${(tab == 'kegs') ? ' active' : ''}"
+       th:href="@{/admin/brewery(tab='kegs')}">Kegs</a>
+    <a th:classappend="${(tab == 'assigned') ? ' active' : ''}"
+       th:href="@{/admin/brewery(tab='assigned')}">Assigned Kegs</a>
+    <a th:classappend="${(tab == 'users') ? ' active' : ''}"
+       th:href="@{/admin/brewery(tab='users')}">Users</a>
+  </div>
+
+  <section th:if="${tab == null or tab == 'taprooms'}">
+    <h2>Your Taprooms</h2>
+    <form method="get" th:action="@{/admin/brewery}" class="inline" style="margin-bottom:.5rem">
+      <input type="hidden" name="tab" value="taprooms"/>
+      <input name="q" placeholder="Search taprooms..." th:value="${q}"/>
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <form method="post" th:action="@{/admin/brewery/taprooms/add}" class="inline" style="margin-left:.5rem">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>New taproom name <input type="text" name="name" required/></label>
+      <button class="btn" type="submit">Add Taproom</button>
+    </form>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Taps</th><th>Active Kegs</th><th class="actions">Actions</th></tr></thead>
+      <tbody>
+      <tr th:each="t : ${taprooms}">
+        <td th:text="${t.name}">Taproom</td>
+        <td th:text="${tapsByTaproom[t.id] != null ? tapsByTaproom[t.id].size() : 0}">0</td>
+        <td th:text="${activeKegsByTaproom[t.id] != null ? activeKegsByTaproom[t.id] : 0}">0</td>
+        <td class="actions">
+          <a class="btn" th:href="@{'/admin/venue/' + ${taproomVenueIds[t.id]}}">Admin</a>
+          <form method="post" class="inline" th:action="@{'/admin/brewery/taprooms/' + ${t.id} + '/delete'}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button class="btn danger" type="submit">Remove</button>
+          </form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section th:if="${tab == 'kegs'}">
+  <h2>Kegs (Unassigned at Brewery)</h2>
+  <div class="filters">
+    <span>Status:</span>
+    <a th:href="@{/admin/brewery(tab='kegs')}" th:classappend="${(selectedStatus == null) ? ' chip active' : ' chip'}">All</a>
+    <a th:each="s : ${allStatuses}"
+       th:href="@{/admin/brewery(tab='kegs', status=${s})}"
+       th:text="${s}"
+       th:classappend="${(selectedStatus == s) ? ' chip active' : ' chip'}">FILLED</a>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Serial</th>
+        <th>Beer</th>
+        <th>Size</th>
+        <th>Status</th>
+        <th>Assigned Venue</th>
+        <th>Distribute</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="k : ${kegs}">
+        <td th:text="${k.serialNumber}">SER-001</td>
+        <td th:text="${k.beer.name}">Beer</td>
+        <td th:text="${k.size}">HALF_BARREL</td>
+        <td>
+          <span class="badge" th:text="${k.status}"
+                th:classappend="${(k.status == T(com.mythictales.bms.taplist.domain.KegStatus).FILLED) ? ' green' :
+                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
+                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
+                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
+                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))}">
+          </span>
+        </td>
+        <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>
+        <td>
+          <form method="post" th:action="@{'/admin/brewery/kegs/' + ${k.id} + '/distribute'}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <select name="venueId" required>
+              <option value="" disabled selected>Select venue…</option>
+              <option th:each="v : ${venues}" th:value="${v.id}" th:text="${v.name}">Venue</option>
+            </select>
+            <button class="btn" type="submit">Distribute</button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  </section>
+
+  <section th:if="${tab == 'users'}">
+    <h2>Users</h2>
+    <form method="get" action="/admin/brewery" class="inline">
+      <label>Filter by Taproom
+        <select name="taproomFilterId">
+          <option value="">All</option>
+          <option th:each="t : ${taprooms}" th:value="${t.id}" th:text="${t.name}" th:selected="${taproomFilterId} == ${t.id}">Taproom</option>
+        </select>
+      </label>
+      <label>Filter by Bar
+        <select name="barFilterId">
+          <option value="">All</option>
+          <option th:each="v : ${venues}" th:if="${v.type == T(com.mythictales.bms.taplist.domain.VenueType).BAR}" th:value="${v.id}" th:text="${v.name}" th:selected="${barFilterId} == ${v.id}">Bar</option>
+        </select>
+      </label>
+      <button class="btn" type="submit">Apply</button>
+    </form>
+    <table class="table">
+      <thead>
+        <tr><th>Username</th><th>Role</th><th>Brewery</th><th>Taproom</th><th>Bar</th></tr>
+      </thead>
+      <tbody>
+        <tr th:each="u : ${breweryUsers}">
+          <td th:text="${u.username}">user</td>
+          <td th:text="${u.role}">role</td>
+          <td th:text="${u.brewery != null ? u.brewery.name : '-'}">-</td>
+          <td th:text="${u.taproom != null ? u.taproom.name : '-'}">-</td>
+          <td th:text="${u.bar != null ? u.bar.name : '-'}">-</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section th:if="${tab == 'assigned'}">
+    <h2>Assigned Kegs (Sent to Venues)</h2>
+    <div class="filters" style="margin-bottom:.5rem">
+      <span>Status:</span>
+      <a th:href="@{/admin/brewery(tab='assigned', assignedVenueId=${assignedVenueId})}"
+         th:classappend="${(selectedStatus == null) ? ' chip active' : ' chip'}">All</a>
+      <a th:each="s : ${allStatuses}"
+         th:href="@{/admin/brewery(tab='assigned', status=${s}, assignedVenueId=${assignedVenueId})}"
+         th:text="${s}"
+         th:classappend="${(selectedStatus == s) ? ' chip active' : ' chip'}">FILLED</a>
+    </div>
+
+    <form method="get" th:action="@{/admin/brewery}" class="inline" style="margin-bottom:.5rem">
+      <input type="hidden" name="tab" value="assigned"/>
+      <input type="hidden" name="status" th:value="${selectedStatus}"/>
+      <label>Filter by Venue
+        <select name="assignedVenueId">
+          <option value="">All</option>
+          <option th:each="v : ${venues}" th:value="${v.id}" th:text="${v.name}"
+                  th:selected="${assignedVenueId} == ${v.id}">Venue</option>
+        </select>
+      </label>
+      <button class="btn" type="submit">Apply</button>
+    </form>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Serial</th><th>Beer</th><th>Size</th><th>Status</th><th>Venue</th><th>Return</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="k : ${assignedKegs}">
+          <td th:text="${k.serialNumber}">SER-020</td>
+          <td th:text="${k.beer.name}">Beer</td>
+          <td th:text="${k.size}">SIXTEL</td>
+          <td>
+            <span class="badge" th:text="${k.status}"
+                  th:classappend="${(k.status == T(com.mythictales.bms.taplist.domain.KegStatus).FILLED) ? ' green' :
+                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
+                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
+                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
+                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))}">
+            </span>
+          </td>
+          <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>
+          <td>
+            <form method="post" th:action="@{'/admin/brewery/kegs/' + ${k.id} + '/return'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn" type="submit">Return</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 </main>
 <div th:replace="fragments/footer :: footer"></div>
 </body></html>

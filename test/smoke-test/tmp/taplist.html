@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Taplist</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<header class="container"><h1>Taplist</h1></header>
+<main class="container">
+  <table class="table">
+    <thead>
+      <tr><th>Tap #</th><th>Beer</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>
+          <span>
+            <strong>Dragon&#39;s Breath IPA</strong>
+            <span class="muted"> (</span><span class="muted">IPA</span>
+            <span class="muted">, </span><span class="muted">6.8</span><span class="muted">% ABV)</span>
+          </span>
+          
+        </td>
+        <td>
+          <!-- Only render indicators when a keg exists. No references to t.keg.* outside this block. -->
+          <div>
+            <div class="pintwrap" style="margin-top:.4rem;">
+              <div>
+                <svg class="pint" width="60" height="90" viewBox="0 0 60 90" aria-label="Fill level">
+                  <defs>
+                    <clipPath id="clip1">
+                      <path d="M 18 10 L 42 10 L 38 80 L 22 80 Z"></path>
+                    </clipPath>
+                    <linearGradient id="beerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ffe08a"/>
+                      <stop offset="100%" stop-color="#c6862b"/>
+                    </linearGradient>
+                  </defs>
+
+                  <!-- Beer fill, clipped to glass -->
+                  <rect x="16" width="28"
+                        fill="url(#beerGrad)" y="10" height="70" clip-path="url(#clip1)"></rect>
+
+                  <!-- Foam head when near full -->
+                  <rect x="16" width="28" fill="#ffffff" opacity="0.9" y="10" height="6" clip-path="url(#clip1)"></rect>
+
+                  <!-- Glass outline -->
+                  <path class="pintglass"
+                        d="M 18 10 L 42 10 L 38 80 L 22 80 Z"
+                        fill="none" stroke="#8aa3bf" stroke-width="2"></path>
+                </svg>
+
+                <!-- Tooltip with debug info (appears on hover) -->
+                <div class="debug-tooltip">
+                  <span>100% — 1984.0 oz (HALF_BARREL)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="actions">
+            <form method="post" action="/taps/1/pour" class="inline"><input type="hidden" name="_csrf" value="l_TppcXVH3jAuCU7LiQ81roDQV8qtRuB-9F1nhBPWJzTVs2S9sfdwaPteUrtgBUDGAkI5IthbGYfjSysy7QU-iJ3bajrZvik"/>
+              <input type="hidden" name="_csrf" value="l_TppcXVH3jAuCU7LiQ81roDQV8qtRuB-9F1nhBPWJzTVs2S9sfdwaPteUrtgBUDGAkI5IthbGYfjSysy7QU-iJ3bajrZvik"/>
+              <label class="inline">Pour
+                <select name="ounces">
+                  <option value="4">4 oz</option>
+                  <option value="8">8 oz</option>
+                  <option value="12">12 oz</option>
+                  <option value="16" selected>16 oz</option>
+                  <option value="20">20 oz</option>
+                </select>
+              </label>
+              <button class="btn" type="submit">Pour</button>
+              <button class="btn danger" type="submit" formaction="/taps/1/blow">Blow</button>
+            </form>
+          </div>
+          
+        </td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>
+          <span>
+            <strong>Shadow Stout</strong>
+            <span class="muted"> (</span><span class="muted">Stout</span>
+            <span class="muted">, </span><span class="muted">8.0</span><span class="muted">% ABV)</span>
+          </span>
+          
+        </td>
+        <td>
+          <!-- Only render indicators when a keg exists. No references to t.keg.* outside this block. -->
+          <div>
+            <div class="pintwrap" style="margin-top:.4rem;">
+              <div>
+                <svg class="pint" width="60" height="90" viewBox="0 0 60 90" aria-label="Fill level">
+                  <defs>
+                    <clipPath id="clip2">
+                      <path d="M 18 10 L 42 10 L 38 80 L 22 80 Z"></path>
+                    </clipPath>
+                    <linearGradient id="beerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ffe08a"/>
+                      <stop offset="100%" stop-color="#c6862b"/>
+                    </linearGradient>
+                  </defs>
+
+                  <!-- Beer fill, clipped to glass -->
+                  <rect x="16" width="28"
+                        fill="url(#beerGrad)" y="10" height="70" clip-path="url(#clip2)"></rect>
+
+                  <!-- Foam head when near full -->
+                  <rect x="16" width="28" fill="#ffffff" opacity="0.9" y="10" height="6" clip-path="url(#clip2)"></rect>
+
+                  <!-- Glass outline -->
+                  <path class="pintglass"
+                        d="M 18 10 L 42 10 L 38 80 L 22 80 Z"
+                        fill="none" stroke="#8aa3bf" stroke-width="2"></path>
+                </svg>
+
+                <!-- Tooltip with debug info (appears on hover) -->
+                <div class="debug-tooltip">
+                  <span>100% — 665.6 oz (SIXTEL)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="actions">
+            <form method="post" action="/taps/2/pour" class="inline"><input type="hidden" name="_csrf" value="l_TppcXVH3jAuCU7LiQ81roDQV8qtRuB-9F1nhBPWJzTVs2S9sfdwaPteUrtgBUDGAkI5IthbGYfjSysy7QU-iJ3bajrZvik"/>
+              <input type="hidden" name="_csrf" value="l_TppcXVH3jAuCU7LiQ81roDQV8qtRuB-9F1nhBPWJzTVs2S9sfdwaPteUrtgBUDGAkI5IthbGYfjSysy7QU-iJ3bajrZvik"/>
+              <label class="inline">Pour
+                <select name="ounces">
+                  <option value="4">4 oz</option>
+                  <option value="8">8 oz</option>
+                  <option value="12">12 oz</option>
+                  <option value="16" selected>16 oz</option>
+                  <option value="20">20 oz</option>
+                </select>
+              </label>
+              <button class="btn" type="submit">Pour</button>
+              <button class="btn danger" type="submit" formaction="/taps/2/blow">Blow</button>
+            </form>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+<div>
+      <footer class="site-footer">
+        <div class="footer-inner">
+          <span>Logged in as </span>
+          <strong>tapadmin</strong>
+          <span>
+            • Role:
+            <span>TAPROOM_ADMIN</span>
+          </span>
+          <span style="margin-left:0.75rem">
+            <a class="btn ghost" href="/logout">Logout</a>
+          </span>
+        </div>
+      </footer>
+    </div>
+</body>
+</html>

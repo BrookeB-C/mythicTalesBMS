@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Keg Event Log — ' + ${venue.name}">Keg Event Log</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1 th:text="'Keg Event Log — ' + ${venue.name}">Keg Event Log</h1>
+        <div class="toolbar">
+            <a class="btn" th:href="@{'/admin/venue/' + ${venue.id}}">⟵ Back to Venue Admin</a>
+            <a class="btn ghost" th:href="@{'/taplist?venueId=' + ${venue.id}}">View Taplist</a>
+        </div>
+    </header>
+
+    <div class="alert muted" th:if="${#lists.isEmpty(events)}">No events yet.</div>
+
+    <table class="table" th:if="${!#lists.isEmpty(events)}">
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Tap</th>
+            <th>Event</th>
+            <th>Ounces</th>
+            <th>Beer</th>
+            <th>Keg</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="e : ${events}">
+            <td th:text="${e.atTime}">2025-01-01T00:00:00Z</td>
+            <td th:text="${e.placement.tap.number}">1</td>
+            <td th:text="${e.type}">POUR</td>
+            <td th:text="${e.ounces} ?: '-'">16</td>
+            <td th:text="${e.placement.keg.beer.name}">IPA</td>
+            <td th:text="${e.placement.keg.id}">42</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
