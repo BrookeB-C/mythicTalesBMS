@@ -26,6 +26,7 @@
             <th>Ounces</th>
             <th>Beer</th>
             <th>Keg</th>
+            <th>By</th>
         </tr>
         </thead>
         <tbody>
@@ -36,6 +37,7 @@
             <td th:text="${e.ounces} ?: '-'">16</td>
             <td th:text="${e.placement.keg.beer.name}">IPA</td>
             <td th:text="${e.placement.keg.id}">42</td>
+            <td th:text="${e.actor != null ? e.actor.username : '—'}">—</td>
         </tr>
         </tbody>
     </table>

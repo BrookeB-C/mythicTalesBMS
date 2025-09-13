@@ -45,11 +45,12 @@ class AdminBreweryUiLookSmokeTest {
            // Brewery info always present
            .andExpect(content().string(containsString("Brewery Admin")))
            .andExpect(content().string(containsString("Save")))
-           // Tabs below info: taprooms, kegs, users, assigned kegs
+           // Tabs below info: taprooms, kegs, assigned, returned, users
            .andExpect(content().string(containsString("?tab=taprooms")))
            .andExpect(content().string(containsString("?tab=kegs")))
-           .andExpect(content().string(containsString("?tab=users")))
-           .andExpect(content().string(containsString("?tab=assigned")));
+           .andExpect(content().string(containsString("?tab=assigned")))
+           .andExpect(content().string(containsString("?tab=returned")))
+           .andExpect(content().string(containsString("?tab=users")));
     }
 
     @Test
@@ -71,7 +72,7 @@ class AdminBreweryUiLookSmokeTest {
            .andExpect(content().string(containsString("<th>Name</th>")))
            .andExpect(content().string(containsString("<th>Taps</th>")))
            .andExpect(content().string(containsString("<th>Active Kegs</th>")))
-           .andExpect(content().string(containsString("/admin/venue/")));
+           .andExpect(content().string(containsString("/admin/taproom?taproomId=")));
 
         // Verify search parameter echoes and still renders list
         mvc.perform(get("/admin/brewery").param("tab","taprooms").param("q","Stone").session(session))

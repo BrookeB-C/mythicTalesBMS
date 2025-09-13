@@ -94,6 +94,10 @@ public class AdminBreweryController {
             model.addAttribute("assignedKegs", assigned);
             model.addAttribute("assignedVenueId", assignedVenueFilterId);
 
+            // Returned kegs (marked RETURNED)
+            List<Keg> returned = kegs.findByBreweryIdAndStatus(user.getBreweryId(), KegStatus.RETURNED);
+            model.addAttribute("returnedKegs", returned);
+
             // Users for this brewery (direct brewery users + those on taps/bars belonging to the brewery)
             java.util.Set<com.mythictales.bms.taplist.domain.UserAccount> userSet = new java.util.LinkedHashSet<>();
             userSet.addAll(users.findByBreweryId(user.getBreweryId()));
@@ -167,6 +171,16 @@ public class AdminBreweryController {
             kegs.save(keg);
         }
         return "redirect:/admin/brewery";
+    }
+
+    @PostMapping("/kegs/{id}/clean")
+    public String markClean(@PathVariable Long id, @AuthenticationPrincipal CurrentUser user){
+        Keg keg = kegs.findById(id).orElseThrow();
+        if (user!=null && user.getBreweryId()!=null && keg.getBrewery()!=null && user.getBreweryId().equals(keg.getBrewery().getId())){
+            keg.setStatus(KegStatus.CLEAN);
+            kegs.save(keg);
+        }
+        return "redirect:/admin/brewery?tab=kegs";
     }
 
     @PostMapping("/taprooms/add")

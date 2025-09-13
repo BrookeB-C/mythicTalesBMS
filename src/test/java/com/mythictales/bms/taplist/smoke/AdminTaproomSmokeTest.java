@@ -59,6 +59,39 @@ class AdminTaproomSmokeTest {
     }
 
     @Test
+    void taproomKegsTabShowsChipsAndBadges() throws Exception {
+        mvc.perform(get("/admin/taproom").param("tab","kegs").session(loginSession))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Status:")))
+           .andExpect(content().string(containsString("class=\" chip")))
+           .andExpect(content().string(containsString("?tab=kegs&amp;status=")))
+           .andExpect(content().string(containsString("class=\"badge")));
+    }
+
+    @Test
+    void taproomInboundTabShowsList() throws Exception {
+        mvc.perform(get("/admin/taproom").param("tab","inbound").session(loginSession))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Inbound Kegs")));
+    }
+
+    @Test
+    void taproomTaplistTabShowsTable() throws Exception {
+        mvc.perform(get("/admin/taproom").param("tab","taplist").session(loginSession))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Your Taplist")))
+           .andExpect(content().string(containsString("Tap #")))
+           .andExpect(content().string(containsString("Actions")));
+    }
+
+    @Test
+    void taproomEventsTabShowsTableOrEmpty() throws Exception {
+        mvc.perform(get("/admin/taproom").param("tab","events").session(loginSession))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Events")));
+    }
+
+    @Test
     void tappingPouringAndBlowingCreatesEvents() throws Exception {
         // Resolve taproom and a tap for the logged-in user
         UserAccount ua = users.findByUsername("tapadmin").orElseThrow();

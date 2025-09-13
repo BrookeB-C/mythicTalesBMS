@@ -44,7 +44,7 @@ class AdminBreweryVenueLinkSmokeTest {
     }
 
     @Test
-    void taproomAdminLinkOpensCorrectVenueAndBackLinkWorks() throws Exception {
+    void taproomAdminLinkOpensTaproomAdmin() throws Exception {
         // Load brewery admin page
         MvcResult breweryPage = mvc.perform(get("/admin/brewery").session(session))
                 .andExpect(status().isOk())
@@ -52,37 +52,43 @@ class AdminBreweryVenueLinkSmokeTest {
 
         String html = breweryPage.getResponse().getContentAsString();
 
-        // Extract all /admin/venue/{id} links present
-        List<String> venueIds = extractVenueIds(html);
-        assertThat(venueIds).isNotEmpty();
+        // Extract all /admin/taproom?taproomId= links present
+        List<String> links = extractTaproomAdminLinks(html);
+        assertThat(links).isNotEmpty();
 
-        boolean found = false;
-        for (String id : venueIds) {
-            MvcResult venuePage = mvc.perform(get("/admin/venue/{venueId}", id).session(session))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string(containsString("Venue Admin")))
-                    .andExpect(content().string(containsString("/admin/brewery")))
-                    .andReturn();
-            String vhtml = venuePage.getResponse().getContentAsString();
-            if (vhtml.contains("Stone Taproom 1")) {
-                found = true;
-                break;
-            }
-        }
+        // Visit the first taproom admin link
+        String href = links.get(0);
+        String query = href.substring(href.indexOf('?'));
+        mvc.perform(get("/admin/taproom" + query).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Taproom Admin")))
+                .andExpect(content().string(containsString("Back to Brewery Admin")))
+                .andReturn();
 
-        assertThat(found)
-                .as("Expected at least one venue admin page to be for 'Stone Taproom 1'")
-                .isTrue();
+        // Verify Kegs tab chips/badges render
+        mvc.perform(get("/admin/taproom" + query).param("tab","kegs").session(session))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Status:")))
+           .andExpect(content().string(containsString("class=\" chip")))
+           .andExpect(content().string(containsString("?tab=kegs&amp;status=")))
+           .andExpect(content().string(containsString("class=\"badge")));
+
+        // Verify Inbound and Blown tabs render headings
+        mvc.perform(get("/admin/taproom" + query).param("tab","inbound").session(session))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Inbound Kegs")));
+        mvc.perform(get("/admin/taproom" + query).param("tab","blown").session(session))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("Blown Kegs")));
     }
 
-    private static List<String> extractVenueIds(String html) {
-        List<String> ids = new ArrayList<>();
-        Pattern p = Pattern.compile("/admin/venue/([0-9]+)");
+    private static List<String> extractTaproomAdminLinks(String html) {
+        List<String> links = new ArrayList<>();
+        Pattern p = Pattern.compile("/admin/taproom\\?taproomId=\\d+");
         Matcher m = p.matcher(html);
         while (m.find()) {
-            ids.add(m.group(1));
+            links.add(m.group());
         }
-        return ids;
+        return links;
     }
 }
-

@@ -39,20 +39,31 @@ public class TaplistController {
     }
 
     @PostMapping("/taps/{id}/tapKeg")
-    public String tapKeg(@PathVariable Long id, @RequestParam("kegId") Long kegId) {
-        tapService.tapKeg(id, kegId);
+    public String tapKeg(@AuthenticationPrincipal CurrentUser currentUser,
+                         @PathVariable Long id,
+                         @RequestParam("kegId") Long kegId,
+                         @RequestParam(value = "redirect", required = false) String redirect) {
+        tapService.tapKeg(id, kegId, currentUser != null ? currentUser.getId() : null);
+        if (redirect != null && redirect.startsWith("/admin/taproom")) return "redirect:" + redirect;
         return "redirect:/taplist";
     }
 
     @PostMapping("/taps/{id}/pour")
-    public String pour(@PathVariable Long id, @RequestParam("ounces") double ounces) {
-        tapService.pour(id, ounces);
+    public String pour(@AuthenticationPrincipal CurrentUser currentUser,
+                       @PathVariable Long id,
+                       @RequestParam("ounces") double ounces,
+                       @RequestParam(value = "redirect", required = false) String redirect) {
+        tapService.pour(id, ounces, currentUser != null ? currentUser.getId() : null);
+        if (redirect != null && redirect.startsWith("/admin/taproom")) return "redirect:" + redirect;
         return "redirect:/taplist";
     }
 
     @PostMapping("/taps/{id}/blow")
-    public String blow(@PathVariable Long id) {
-        tapService.blow(id);
+    public String blow(@AuthenticationPrincipal CurrentUser currentUser,
+                       @PathVariable Long id,
+                       @RequestParam(value = "redirect", required = false) String redirect) {
+        tapService.blow(id, currentUser != null ? currentUser.getId() : null);
+        if (redirect != null && redirect.startsWith("/admin/taproom")) return "redirect:" + redirect;
         return "redirect:/taplist";
     }
 }

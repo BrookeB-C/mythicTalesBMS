@@ -7,4 +7,5 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     java.util.List<UserAccount> findByBreweryId(Long breweryId);
     java.util.List<UserAccount> findByTaproom_Brewery_Id(Long breweryId);
     java.util.List<UserAccount> findByBar_Brewery_Id(Long breweryId);
+    java.util.List<UserAccount> findByTaproomId(Long taproomId);
 }

@@ -35,7 +35,7 @@ public class SecurityConfig {
               .requestMatchers("/admin/site/**").hasRole("SITE_ADMIN")
               .requestMatchers("/admin/brewery/**").hasRole("BREWERY_ADMIN")
               .requestMatchers("/admin/bar/**").hasRole("BAR_ADMIN")
-              .requestMatchers("/admin/taproom/**").hasRole("TAPROOM_ADMIN")
+              .requestMatchers("/admin/taproom/**").hasAnyRole("TAPROOM_ADMIN","BREWERY_ADMIN","BAR_ADMIN","SITE_ADMIN")
               .requestMatchers("/taplist","/taplist/**").authenticated()
               .anyRequest().permitAll())
           .formLogin(l->l.loginPage("/login").permitAll().failureUrl("/login?error").successHandler(roleBasedSuccessHandler()))

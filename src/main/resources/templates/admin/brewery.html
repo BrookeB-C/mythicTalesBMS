@@ -23,6 +23,8 @@
        th:href="@{/admin/brewery(tab='kegs')}">Kegs</a>
     <a th:classappend="${(tab == 'assigned') ? ' active' : ''}"
        th:href="@{/admin/brewery(tab='assigned')}">Assigned Kegs</a>
+    <a th:classappend="${(tab == 'returned') ? ' active' : ''}"
+       th:href="@{/admin/brewery(tab='returned')}">Returned Kegs</a>
     <a th:classappend="${(tab == 'users') ? ' active' : ''}"
        th:href="@{/admin/brewery(tab='users')}">Users</a>
   </div>
@@ -47,7 +49,7 @@
         <td th:text="${tapsByTaproom[t.id] != null ? tapsByTaproom[t.id].size() : 0}">0</td>
         <td th:text="${activeKegsByTaproom[t.id] != null ? activeKegsByTaproom[t.id] : 0}">0</td>
         <td class="actions">
-          <a class="btn" th:href="@{'/admin/venue/' + ${taproomVenueIds[t.id]}}">Admin</a>
+          <a class="btn" th:href="@{/admin/taproom(taproomId=${t.id},from='brewery')}">Admin</a>
           <form method="post" class="inline" th:action="@{'/admin/brewery/taprooms/' + ${t.id} + '/delete'}">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <button class="btn danger" type="submit">Remove</button>
@@ -103,6 +105,10 @@
               <option th:each="v : ${venues}" th:value="${v.id}" th:text="${v.name}">Venue</option>
             </select>
             <button class="btn" type="submit">Distribute</button>
+          </form>
+          <form method="post" th:action="@{'/admin/brewery/kegs/' + ${k.id} + '/clean'}" class="inline" style="margin-left:.5rem;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button class="btn" type="submit">Mark Clean</button>
           </form>
         </td>
       </tr>
@@ -188,6 +194,31 @@
             <form method="post" th:action="@{'/admin/brewery/kegs/' + ${k.id} + '/return'}">
               <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
               <button class="btn" type="submit">Return</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section th:if="${tab == 'returned'}">
+    <h2>Returned Kegs</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Serial</th><th>Beer</th><th>Size</th><th>Status</th><th>Reset</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="k : ${returnedKegs}">
+          <td th:text="${k.serialNumber}">SER-100</td>
+          <td th:text="${k.beer.name}">Beer</td>
+          <td th:text="${k.size}">SIXTEL</td>
+          <td th:text="${k.status}">RETURNED</td>
+          <td>
+            <form method="post" th:action="@{'/admin/brewery/kegs/' + ${k.id} + '/return'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn" type="submit">Reset to Empty</button>
             </form>
           </td>
         </tr>
