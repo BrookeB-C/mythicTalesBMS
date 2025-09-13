@@ -85,7 +85,6 @@ class AdminBreweryUiLookSmokeTest {
         mvc.perform(get("/admin/brewery").param("tab","users").session(session))
            .andExpect(status().isOk())
            .andExpect(content().string(containsString("Users")))
-           .andExpect(content().string(containsString("Filter by Taproom")))
-           .andExpect(content().string(containsString("Filter by Bar")));
+           .andExpect(content().string(containsString("Filter by Venue")));
     }
 }

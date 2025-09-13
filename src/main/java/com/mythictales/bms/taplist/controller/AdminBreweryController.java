@@ -34,8 +34,7 @@ public class AdminBreweryController {
     @GetMapping
     public String page(@AuthenticationPrincipal CurrentUser user,
                        @RequestParam(value = "status", required = false) KegStatus status,
-                       @RequestParam(value = "taproomFilterId", required = false) Long taproomFilterId,
-                       @RequestParam(value = "barFilterId", required = false) Long barFilterId,
+                       @RequestParam(value = "userVenueId", required = false) Long userVenueId,
                        @RequestParam(value = "assignedVenueId", required = false) Long assignedVenueFilterId,
                        @RequestParam(value = "tab", required = false) String tab,
                        @RequestParam(value = "q", required = false) String q,
@@ -101,16 +100,25 @@ public class AdminBreweryController {
             userSet.addAll(users.findByTaproom_Brewery_Id(user.getBreweryId()));
             userSet.addAll(users.findByBar_Brewery_Id(user.getBreweryId()));
             java.util.List<com.mythictales.bms.taplist.domain.UserAccount> userList = new java.util.ArrayList<>(userSet);
-            // Filter by taproom/bar if provided
-            if (taproomFilterId != null) {
-                userList.removeIf(u -> u.getTaproom() == null || !taproomFilterId.equals(u.getTaproom().getId()));
-            }
-            if (barFilterId != null) {
-                userList.removeIf(u -> u.getBar() == null || !barFilterId.equals(u.getBar().getId()));
+            // Filter by Venue (applies to users tied to taprooms or bars)
+            if (userVenueId != null) {
+                // Build a helper map for bar-name → venueId (since bars don't directly link to Venue)
+                java.util.Map<String, Long> venueIdByName = new java.util.HashMap<>();
+                for (var v : vList) venueIdByName.put(v.getName(), v.getId());
+                userList.removeIf(u -> {
+                    if (u.getTaproom() != null) {
+                        Long vId = taproomVenueIds.get(u.getTaproom().getId());
+                        return vId == null || !userVenueId.equals(vId);
+                    } else if (u.getBar() != null) {
+                        Long vId = venueIdByName.get(u.getBar().getName());
+                        return vId == null || !userVenueId.equals(vId);
+                    }
+                    // Users without venue association (e.g., pure brewery admins) are filtered out when a venue is selected
+                    return true;
+                });
             }
             model.addAttribute("breweryUsers", userList);
-            model.addAttribute("taproomFilterId", taproomFilterId);
-            model.addAttribute("barFilterId", barFilterId);
+            model.addAttribute("userVenueId", userVenueId);
         } else {
             model.addAttribute("taprooms", java.util.List.of());
             model.addAttribute("kegs", java.util.List.of());

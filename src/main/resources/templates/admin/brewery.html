@@ -113,16 +113,12 @@
   <section th:if="${tab == 'users'}">
     <h2>Users</h2>
     <form method="get" action="/admin/brewery" class="inline">
-      <label>Filter by Taproom
-        <select name="taproomFilterId">
+      <input type="hidden" name="tab" value="users"/>
+      <label>Filter by Venue
+        <select name="userVenueId">
           <option value="">All</option>
-          <option th:each="t : ${taprooms}" th:value="${t.id}" th:text="${t.name}" th:selected="${taproomFilterId} == ${t.id}">Taproom</option>
-        </select>
-      </label>
-      <label>Filter by Bar
-        <select name="barFilterId">
-          <option value="">All</option>
-          <option th:each="v : ${venues}" th:if="${v.type == T(com.mythictales.bms.taplist.domain.VenueType).BAR}" th:value="${v.id}" th:text="${v.name}" th:selected="${barFilterId} == ${v.id}">Bar</option>
+          <option th:each="v : ${venues}" th:value="${v.id}" th:text="${v.name}"
+                  th:selected="${userVenueId} == ${v.id}">Venue</option>
         </select>
       </label>
       <button class="btn" type="submit">Apply</button>
