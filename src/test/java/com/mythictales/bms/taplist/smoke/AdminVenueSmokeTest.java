@@ -67,10 +67,9 @@ class AdminVenueSmokeTest {
     void eventsBackLinkResolvesToVenueAdmin() throws Exception {
         Long venueId = resolveVenueIdForTapadmin();
         // Load events page and ensure it contains the Back to Venue Admin link
-        MvcResult events = mvc.perform(get("/admin/venue/{venueId}/events", venueId).session(loginSession))
+        mvc.perform(get("/admin/venue/{venueId}/events", venueId).session(loginSession))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("/admin/venue/" + venueId)))
-                .andReturn();
+                .andExpect(content().string(containsString("/admin/venue/" + venueId)));
 
         // Now request the back link target and ensure it loads
         mvc.perform(get("/admin/venue/{venueId}", venueId).session(loginSession))
@@ -78,4 +77,3 @@ class AdminVenueSmokeTest {
            .andExpect(content().string(containsString("Venue Admin")));
     }
 }
-

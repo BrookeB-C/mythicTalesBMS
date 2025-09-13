@@ -59,10 +59,13 @@ public class AdminTaproomController {
             venue = userTaps.get(0).getVenue();
         } else {
             // Fallback: resolve a Venue for this taproom via its brewery and type
-            taprooms.findById(user.getTaproomId()).ifPresent(tr ->
-                venues.findFirstByBreweryIdAndType(tr.getBrewery().getId(), VenueType.TAPROOM)
-                      .ifPresent(v -> model.addAttribute("venue", v))
-            );
+            var trOpt = taprooms.findById(user.getTaproomId());
+            if (trOpt.isPresent()) {
+                var vOpt = venues.findFirstByBreweryIdAndType(trOpt.get().getBrewery().getId(), VenueType.TAPROOM);
+                if (vOpt.isPresent()) {
+                    venue = vOpt.get();
+                }
+            }
         }
         if (venue != null) {
             model.addAttribute("venue", venue);

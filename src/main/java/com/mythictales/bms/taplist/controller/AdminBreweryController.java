@@ -166,7 +166,7 @@ public class AdminBreweryController {
         if (user!=null && user.getBreweryId()!=null && name!=null && !name.isBlank()){
             var br = breweries.findById(user.getBreweryId()).orElse(null);
             if (br != null){
-                var tr = taprooms.save(new com.mythictales.bms.taplist.domain.Taproom(name.trim(), br));
+                taprooms.save(new com.mythictales.bms.taplist.domain.Taproom(name.trim(), br));
                 venues.save(new com.mythictales.bms.taplist.domain.Venue(name.trim(), com.mythictales.bms.taplist.domain.VenueType.TAPROOM, br));
             }
         }

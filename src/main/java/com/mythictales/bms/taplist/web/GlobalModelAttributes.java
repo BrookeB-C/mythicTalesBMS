@@ -23,9 +23,6 @@ public class GlobalModelAttributes {
                     if (v.isPresent()) venueId = v.get().getId();
                 }
             } else if (user.getBarId() != null) {
-                bars.findById(user.getBarId()).ifPresent(b ->
-                    venues.findFirstByName(b.getName()).ifPresent(v -> { /* match by name */ })
-                );
                 var barOpt = bars.findById(user.getBarId());
                 if (barOpt.isPresent()) {
                     var vOpt = venues.findFirstByName(barOpt.get().getName());
