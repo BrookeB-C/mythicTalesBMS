@@ -7,7 +7,7 @@ IMAGE    := mythictales/$(APP_NAME):latest
 PORT     := 8080
 JAVA_OPTS ?=
 
-.PHONY: help run build test package clean format check-format docker-build docker-run docker-stop docker-rm spotbugs spotbugs-strict
+.PHONY: help run build test package clean format check-format docker-build docker-run docker-stop docker-rm spotbugs spotbugs-strict setup-commit-template
 
 help:
 	@echo "Targets:"
@@ -22,8 +22,9 @@ help:
 	@echo "  docker-run    - Run Docker container on port $(PORT)"
 	@echo "  docker-stop   - Stop running container"
 	@echo "  docker-rm     - Remove stopped container"
- 	@echo "  spotbugs      - Generate SpotBugs report (non-fatal)"
- 	@echo "  spotbugs-strict - Fail on HIGH severity SpotBugs issues"
+	@echo "  spotbugs      - Generate SpotBugs report (non-fatal)"
+	@echo "  spotbugs-strict - Fail on HIGH severity SpotBugs issues"
+	@echo "  setup-commit-template - Configure git commit.template to .gitmessage.txt"
 
 run:
 	mvn spring-boot:run
@@ -63,3 +64,6 @@ spotbugs:
 
 spotbugs-strict:
 	mvn -B -ntp -Dspotbugs.failOnError=true -Dspotbugs.threshold=High spotbugs:check
+
+setup-commit-template:
+	git config commit.template .gitmessage.txt

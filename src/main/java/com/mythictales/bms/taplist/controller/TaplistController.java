@@ -56,7 +56,8 @@ public class TaplistController {
       @PathVariable Long id,
       @RequestParam("ounces") double ounces,
       @RequestParam(value = "redirect", required = false) String redirect) {
-    tapService.pour(id, ounces, currentUser != null ? currentUser.getId() : null);
+    // Allow overpour to auto-blow in MVC flow for smoother UX
+    tapService.pour(id, ounces, currentUser != null ? currentUser.getId() : null, true);
     if (redirect != null && redirect.startsWith("/admin/taproom")) return "redirect:" + redirect;
     return "redirect:/taplist";
   }

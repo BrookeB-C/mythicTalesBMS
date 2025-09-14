@@ -1,0 +1,19 @@
+# CODEOWNERS governs default reviewers/owners for path changes.
+# Update handles to your GitHub users/teams as needed.
+
+# API & Security areas
+src/main/java/com/mythictales/bms/taplist/api/**      @BrookeB-C
+src/main/java/com/mythictales/bms/taplist/security/** @BrookeB-C
+docs/agents/genie-api.md                              @BrookeB-C
+docs/techtasks/100-genie-api-tasks.md                 @BrookeB-C
+
+# Platform, Data & Observability areas
+src/main/resources/**                                 @BrookeB-C
+src/main/java/com/mythictales/bms/taplist/config/**   @BrookeB-C
+db/migration/**                                       @BrookeB-C
+Dockerfile                                            @BrookeB-C
+compose.yaml                                          @BrookeB-C
+.github/workflows/**                                  @BrookeB-C
+docs/agents/genie-platform-data.md                    @BrookeB-C
+docs/techtasks/101-genie-platform-data-tasks.md       @BrookeB-C
+

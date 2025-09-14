@@ -1,0 +1,105 @@
+# Mythic Tales BMS — Genies Configuration
+#
+# Purpose: Central place to define runtime profiles and scopes for the two agent instances
+# ("genies"). This file is declarative. If your agent harness supports reading external
+# config, point it to this file (e.g., env var GENIE_CONFIG=config.toml). Otherwise, treat
+# this as documentation to consistently set environment variables and scopes for each run.
+
+version = "1.0"
+
+[global]
+# GitHub repository identifier (used by badges, CI references, etc.)
+repo = "BrookeB-C/mythicTalesBMS"
+# Default environment for local development
+default_env = { SPRING_PROFILES_ACTIVE = "dev" }
+
+# =====================
+# Genie Profiles
+# =====================
+
+[genies.api]
+role = "genie-api"                      # Matches AGENT_ROLE expected by AGENTS.md
+guide = "docs/agents/genie-api.md"      # Primary operating guide for this genie
+tasks_file = "docs/techtasks/100-genie-api-tasks.md"
+enabled = true
+
+# Environment variables to export when running this genie
+env = {
+  AGENT_ROLE = "genie-api",
+  SPRING_PROFILES_ACTIVE = "dev"
+}
+
+# Scope controls: where this genie is allowed to work primarily
+paths_include = [
+  "src/main/java/com/mythictales/bms/taplist/api/**",
+  "src/main/java/com/mythictales/bms/taplist/security/**",
+  "src/main/java/com/mythictales/bms/taplist/service/**",
+  "src/main/java/com/mythictales/bms/taplist/config/**",
+  "docs/**"
+]
+paths_exclude = [
+  "src/main/resources/templates/**"
+]
+
+# Quality gates the genie should satisfy before handoff
+checks = { run_tests = true, spotbugs_strict = true, codeql = true, formatter_check = true }
+
+
+[genies.platform]
+role = "genie-platform-data"
+guide = "docs/agents/genie-platform-data.md"
+tasks_file = "docs/techtasks/101-genie-platform-data-tasks.md"
+enabled = true
+
+env = {
+  AGENT_ROLE = "genie-platform-data",
+  SPRING_PROFILES_ACTIVE = "dev"
+}
+
+paths_include = [
+  "src/main/resources/**",
+  "src/main/java/com/mythictales/bms/taplist/config/**",
+  "db/migration/**",
+  ".github/**",
+  "Dockerfile",
+  "compose.yaml",
+  "docs/**"
+]
+paths_exclude = []
+
+checks = { run_tests = true, spotbugs_strict = true, codeql = true, formatter_check = true }
+
+
+# =====================
+# Runtime Profiles
+# =====================
+
+[profiles.dev]
+description = "Local development: H2, Swagger UI on, demo seed enabled"
+swagger = true
+h2_console = true
+seed_demo = true
+csrf_loosened = true
+cors = { allow_any_origin = true }
+
+[profiles.prod]
+description = "Production: Postgres, Swagger UI off by default, strict CORS"
+swagger = false
+h2_console = false
+seed_demo = false
+csrf_loosened = false
+cors = { allow_any_origin = false, allowed_origins = [] }
+
+
+# =====================
+# Helper Commands (informational)
+# =====================
+
+[commands]
+run = "mvn spring-boot:run"
+test = "mvn test"
+verify = "mvn -B -ntp verify"
+spotbugs = "make spotbugs-strict"
+format = "make format && make check-format"
+swagger = "open http://localhost:8080/swagger-ui.html"
+

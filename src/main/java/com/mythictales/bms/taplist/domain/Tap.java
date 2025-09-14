@@ -74,4 +74,8 @@ public class Tap {
   public void setBar(Bar bar) {
     this.bar = bar;
   }
+
+  public long getVersion() {
+    return version;
+  }
 }

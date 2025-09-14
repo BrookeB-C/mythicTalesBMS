@@ -1,6 +1,7 @@
 package com.mythictales.bms.taplist.service;
 
 import java.time.Instant;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,10 +100,23 @@ public class TapService {
 
   @Transactional
   public void pour(Long tapId, double ounces, Long actorUserId) {
+    pour(tapId, ounces, actorUserId, false);
+  }
+
+  @Transactional
+  public void pour(Long tapId, double ounces, Long actorUserId, boolean allowOverpourToBlow) {
     Tap tap = taps.findById(tapId).orElseThrow();
     Keg keg = tap.getKeg();
     if (keg == null) return;
+    if (ounces <= 0) {
+      throw new BusinessValidationException("Pour amount must be positive");
+    }
     double remain = keg.getRemainingOunces() - ounces;
+    if (remain < 0 && !allowOverpourToBlow) {
+      throw new BusinessValidationException(
+          "Overpour exceeds remaining ounces",
+          Map.of("remainingOunces", keg.getRemainingOunces(), "requestedOunces", ounces));
+    }
     keg.setRemainingOunces(Math.max(0, remain));
     kegs.save(keg);
     placements

@@ -13,6 +13,8 @@ public interface TapRepository extends JpaRepository<Tap, Long> {
 
   List<Tap> findByVenueId(Long venueId);
 
+  List<Tap> findByVenueBreweryId(Long breweryId);
+
   List<Tap> findByTaproomIdAndKegIsNull(Long taproomId);
 
   List<Tap> findByBarIdAndKegIsNull(Long barId);

@@ -40,7 +40,7 @@ public final class ApiMappers {
         t.getTaproom() != null ? t.getTaproom().getId() : null,
         t.getBar() != null ? t.getBar().getId() : null,
         toDto(t.getKeg()),
-        null // Tap doesn't expose version directly, omit or add if needed later
+        t.getVersion()
         );
   }
 

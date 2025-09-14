@@ -1,0 +1,26 @@
+# Summary (<= 72 chars)
+
+
+# Context / Motivation
+# - Why is this change necessary? What problem does it solve?
+
+
+# Changes
+# - Bullet list of notable changes
+# - Include key files or modules touched
+
+
+# Risks
+# - Potential side effects, data or behavior risks
+# - Rollback plan if needed
+
+
+# Validation
+# - How did you test it (commands, URLs, screenshots)?
+# - Include references to tests added/updated
+
+
+# References
+# - Link to docs/techtasks entry or issue id
+# - Link to docs/tech/reviewbranches entry and PR if applicable
+
