@@ -1,0 +1,31 @@
+# Docker build context ignore
+
+# VCS
+.git
+.gitignore
+
+# IDE/editor
+.idea
+.vscode
+*.iml
+.DS_Store
+
+# Build outputs
+target
+dist
+build
+out
+
+# Logs and temp
+*.log
+server.log
+tmp
+temp
+.cache
+
+# Node/yarn (if present)
+node_modules
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+

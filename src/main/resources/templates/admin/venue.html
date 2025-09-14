@@ -6,15 +6,17 @@
   <link rel="stylesheet" th:href="@{/css/app.css}"/>
 </head>
 <body>
-<header>
-  <h1 th:text="'Venue Admin — ' + ${venue != null ? venue.name : 'Unknown'}">Venue Admin</h1>
-  <div class="toolbar">
-    <a class="btn" th:if="${venue != null}" th:href="@{'/admin/venue/' + ${venue.id} + '/events'}">View Events</a>
-    <a class="btn ghost" th:if="${venue != null}" th:href="@{'/taplist?venueId=' + ${venue.id}}">View Taplist</a>
-  </div>
-  <p><a class="btn" th:href="@{/admin/brewery}">⟵ Back to Brewery Admin</a></p>
+  <header>
+    <h1 th:text="'Venue Admin — ' + ${venue != null ? venue.name : 'Unknown'}">Venue Admin</h1>
+    <div class="toolbar">
+      <a class="btn" th:if="${venue != null}" th:href="@{'/admin/venue/' + ${venue.id} + '/events'}">View Events</a>
+      <a class="btn ghost" th:if="${venue != null}" th:href="@{'/taplist?venueId=' + ${venue.id}}">View Taplist</a>
+    </div>
+    <p>
+      <a class="btn" th:href="@{/admin/brewery}">⟵ Back to Brewery Admin</a>
+    </p>
   </header>
-<main>
+  <main>
   <h2>Taps</h2>
   <table class="table">
     <thead><tr><th>#</th><th>Beer</th><th>%</th></tr></thead>
@@ -29,7 +31,7 @@
       </tr>
     </tbody>
   </table>
-</main>
-<div th:replace="fragments/footer :: footer"></div>
-</body>
+  </main>
+  <div th:replace="~{fragments/footer :: footer}"></div>
+  </body>
 </html>
