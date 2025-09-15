@@ -5,6 +5,7 @@ import static com.mythictales.bms.taplist.api.ApiMappers.toDto;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,27 +48,33 @@ public class TapApiController {
   }
 
   @GetMapping("/taps")
-  @Operation(summary = "List taps for context or by explicit filter")
-  public List<TapDto> listTaps(
+  @Operation(summary = "List taps for context or by explicit filter (paginated)")
+  public org.springframework.data.domain.Page<TapDto> listTaps(
       @AuthenticationPrincipal CurrentUser user,
       @RequestParam(value = "venueId", required = false) Long venueId,
       @RequestParam(value = "taproomId", required = false) Long taproomId,
-      @RequestParam(value = "barId", required = false) Long barId) {
-    List<Tap> list;
-    if (venueId != null) list = taps.findByVenueId(venueId);
-    else if (taproomId != null) list = taps.findByTaproomId(taproomId);
-    else if (barId != null) list = taps.findByBarId(barId);
+      @RequestParam(value = "barId", required = false) Long barId,
+      @org.springframework.data.web.PageableDefault(sort = "number")
+          org.springframework.data.domain.Pageable pageable) {
+    org.springframework.data.domain.Page<Tap> page;
+    if (venueId != null) page = taps.findByVenueId(venueId, pageable);
+    else if (taproomId != null) page = taps.findByTaproomId(taproomId, pageable);
+    else if (barId != null) page = taps.findByBarId(barId, pageable);
     else if (user != null && user.getTaproomId() != null)
-      list = taps.findByTaproomId(user.getTaproomId());
-    else if (user != null && user.getBarId() != null) list = taps.findByBarId(user.getBarId());
+      page = taps.findByTaproomId(user.getTaproomId(), pageable);
+    else if (user != null && user.getBarId() != null)
+      page = taps.findByBarId(user.getBarId(), pageable);
     else if (user != null && user.getBreweryId() != null)
-      list = taps.findByVenueBreweryId(user.getBreweryId());
-    else list = taps.findAll();
-    // Enforce read scope filtering
-    if (user != null) {
-      list = list.stream().filter(t -> isAllowedRead(user, t)).collect(Collectors.toList());
-    }
-    return list.stream().map(ApiMappers::toDto).collect(Collectors.toList());
+      page = taps.findByVenueBreweryId(user.getBreweryId(), pageable);
+    else page = taps.findAll(pageable);
+
+    // Enforce read scope filtering post-query (best effort)
+    List<Tap> filtered =
+        page.getContent().stream()
+            .filter(t -> user == null || isAllowedRead(user, t))
+            .collect(Collectors.toList());
+    return new org.springframework.data.domain.PageImpl<>(
+        filtered, pageable, page.getTotalElements());
   }
 
   private boolean isAllowedRead(CurrentUser user, Tap tap) {
@@ -92,6 +99,9 @@ public class TapApiController {
         body.actorUserId() != null
             ? body.actorUserId()
             : (currentUser != null ? currentUser.getId() : null);
+    if (body.expectedVersion() != null && !body.expectedVersion().equals(tap.getVersion())) {
+      throw new OptimisticLockingFailureException("Tap version conflict");
+    }
     tapService.tapKeg(tapId, body.kegId(), actor);
     return taps.findById(tapId)
         .map(t -> ResponseEntity.ok(toDto(t)))
@@ -111,6 +121,9 @@ public class TapApiController {
         req.actorUserId() != null
             ? req.actorUserId()
             : (currentUser != null ? currentUser.getId() : null);
+    if (req.expectedVersion() != null && !req.expectedVersion().equals(tap.getVersion())) {
+      throw new OptimisticLockingFailureException("Tap version conflict");
+    }
     tapService.pour(tapId, req.ounces(), actor, req.allowOverpourToBlow());
     return taps.findById(tapId)
         .map(Tap::getKeg)
@@ -131,6 +144,11 @@ public class TapApiController {
         req != null && req.actorUserId() != null
             ? req.actorUserId()
             : (currentUser != null ? currentUser.getId() : null);
+    if (req != null
+        && req.expectedVersion() != null
+        && !req.expectedVersion().equals(tap.getVersion())) {
+      throw new OptimisticLockingFailureException("Tap version conflict");
+    }
     tapService.blow(tapId, actor);
     return taps.findById(tapId)
         .map(t -> ResponseEntity.ok(toDto(t)))
