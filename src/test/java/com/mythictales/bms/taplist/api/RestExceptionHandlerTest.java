@@ -4,12 +4,11 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,11 +21,17 @@ import com.mythictales.bms.taplist.service.BusinessValidationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
-@WebMvcTest(controllers = RestExceptionHandlerTest.TestApi.class)
-@Import(RestExceptionHandler.class)
 class RestExceptionHandlerTest {
 
-  @Autowired private MockMvc mvc;
+  private MockMvc mvc;
+
+  @BeforeEach
+  void setUp() {
+    this.mvc =
+        MockMvcBuilders.standaloneSetup(new TestApi())
+            .setControllerAdvice(new RestExceptionHandler())
+            .build();
+  }
 
   // Minimal controller inside API package to trigger advice scoping
   @RestController
