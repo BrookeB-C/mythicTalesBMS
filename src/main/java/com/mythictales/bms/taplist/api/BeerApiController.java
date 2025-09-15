@@ -1,8 +1,9 @@
 package com.mythictales.bms.taplist.api;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,8 +23,8 @@ public class BeerApiController {
   }
 
   @GetMapping
-  public List<BeerDto> list() {
-    return beers.findAll().stream().map(ApiMappers::toDto).collect(Collectors.toList());
+  public Page<BeerDto> list(@ParameterObject @PageableDefault(sort = "name") Pageable pageable) {
+    return beers.findAll(pageable).map(ApiMappers::toDto);
   }
 
   @GetMapping("/{id}")

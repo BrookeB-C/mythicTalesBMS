@@ -1,8 +1,9 @@
 package com.mythictales.bms.taplist.api;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +26,8 @@ public class UserApiController {
   }
 
   @GetMapping
-  public List<UserDto> list() {
-    return users.findAll().stream().map(ApiMappers::toDto).collect(Collectors.toList());
+  public Page<UserDto> list(
+      @ParameterObject @PageableDefault(sort = "username") Pageable pageable) {
+    return users.findAll(pageable).map(ApiMappers::toDto);
   }
 }

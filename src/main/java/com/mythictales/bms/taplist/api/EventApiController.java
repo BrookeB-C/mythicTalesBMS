@@ -1,8 +1,9 @@
 package com.mythictales.bms.taplist.api;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,12 +26,15 @@ public class EventApiController {
   }
 
   @GetMapping("/venues/{venueId}/events")
-  public ResponseEntity<List<KegEventDto>> list(@PathVariable Long venueId) {
+  public ResponseEntity<Page<KegEventDto>> list(
+      @PathVariable Long venueId,
+      @ParameterObject
+          @PageableDefault(
+              sort = "atTime",
+              direction = org.springframework.data.domain.Sort.Direction.DESC)
+          Pageable pageable) {
     if (!venues.existsById(venueId)) return ResponseEntity.notFound().build();
-    var list =
-        events.findVenueEvents(venueId).stream()
-            .map(ApiMappers::toDto)
-            .collect(Collectors.toList());
-    return ResponseEntity.ok(list);
+    var page = events.findVenueEvents(venueId, pageable).map(ApiMappers::toDto);
+    return ResponseEntity.ok(page);
   }
 }
