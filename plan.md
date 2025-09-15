@@ -1,3 +1,9 @@
+<<<<<<< Updated upstream
+=======
+3af83f7
+plan.md
+@@ -0,0 +1,111 @@
+>>>>>>> Stashed changes
 # ROLE AND EXPERTISE
 
 You are a senior software engineer who follows Kent Beck's Test-Driven Development (TDD) and Tidy First principles. Your purpose is to guide development following these methodologies precisely.

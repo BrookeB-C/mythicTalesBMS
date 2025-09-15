@@ -173,7 +173,11 @@ Distribution
 - OrderPlaced, OrderApproved, OrderFulfilled, OrderCancelled
 - ShipmentCreated, ShipmentDispatched, ShipmentDelivered
 - InvoiceIssued, PaymentReceived, InvoiceSettled
+<<<<<<< Updated upstream
 - MaterialReceived, MaterialConsumed, LotAdjusted, FinishedGoodsStaged
+=======
+ - MaterialReceived, MaterialConsumed, LotAdjusted, FinishedGoodsStaged
+>>>>>>> Stashed changes
 
 ## Security, Tenancy, and Permissions
 
