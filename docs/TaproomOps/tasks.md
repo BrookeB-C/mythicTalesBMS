@@ -34,7 +34,7 @@ This is a scoped backlog for the Taproom Operations context (taps, keg lifecycle
 ## MVC & UI (Thymeleaf)
 - [ ] Align Taplist page with projection model (remove direct entity coupling).
 - [ ] Add AJAX flows for pour/tap/blow with optimistic UI updates.
-- [ ] Add visual warnings for low volume and blown kegs.
+- [ ] Add visual warnings for low volume (15% threshold) and blown kegs; ensure the threshold is configurable with default 15%.
 - [ ] Improve accessibility (ARIA labels for SVG pint, focus states, error summaries).
 - [ ] Replace deprecated Thymeleaf fragment syntax (done for footer) sweep full templates.
 

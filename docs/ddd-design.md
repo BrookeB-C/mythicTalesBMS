@@ -108,6 +108,26 @@ This document proposes a domain‑driven design (DDD) for a full Brewery Managem
   - IAM serves all contexts (auth), but each context enforces authorization policies.
 - Anti‑Corruption Layers (ACLs): any external partner POS, ERP, or carrier API.
 
+## Product Decisions Snapshot
+
+The following decisions reflect sponsor input and drive near‑term scope:
+- Tenancy: Multi‑tenant, shared deployment with row‑level scoping.
+- Auth: Local accounts only for now (no SSO initially).
+- Taproom pours: Fixed presets (4/8/12/16/20 oz).
+- Low‑volume threshold: 15% — UI indicator plus an internal domain event when crossing threshold.
+- Receive‑before‑tap: Optional (DISTRIBUTED → TAPPED is allowed).
+- KegInventory: Introduce dedicated context now (near‑term priority).
+- Orders/Distribution: Out of scope for the next 1–2 releases.
+- Invoicing/Payments: Out of scope for the next 1–2 releases.
+- KPIs focus: Time‑to‑tap, Keg turnaround time, Invoice latency.
+- Serial numbers: Manual entry and barcode/QR supported.
+- Manifold support: Not needed (1:1 tap:keg only).
+- Compliance: None in near term.
+- UX targets: Include mobile admin needs and a big‑board taplist display mode.
+- Environments: Dev and Staging (Prod later); weekly release cadence.
+- Data retention: Keep 24 months of event history, then archive.
+- Accessibility: Aim for WCAG AA.
+
 ## Core Aggregates, Commands, Events (Selected)
 
 Taproom Ops (existing, with refinements)

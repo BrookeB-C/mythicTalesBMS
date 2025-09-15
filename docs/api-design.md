@@ -41,6 +41,7 @@ Roles (from codebase): `SITE_ADMIN`, `BREWERY_ADMIN`, `TAPROOM_ADMIN`, `BAR_ADMI
 - `POST /api/v1/taps/{tapId}/pour`
   - Body: `{ "ounces": number, "actorUserId"?: number, "expectedKegVersion"?: number }`
   - 200: `Keg` with updated `remainingOunces` and derived fill percent; 422 if exceeds remaining.
+  - Constraints: `ounces` must match fixed presets (4/8/12/16/20) unless admin override flag is set.
 - `POST /api/v1/taps/{tapId}/blow`
   - Body: `{ "actorUserId"?: number, "expectedKegVersion"?: number }`
   - Effects: Marks keg blown; detaches from tap; records event.
@@ -211,3 +212,6 @@ POST /api/v1/kegs/42/distribute
 **Non-Goals (Now)**
 - Public unauthenticated endpoints, complex reporting, and bulk upload are out of scope for this iteration.
 
+Additional Notes (from product decisions)
+- Low‑volume alert: when a keg’s remaining falls below 15%, emit an internal event for alerting/analytics and show a UI indicator.
+- Receive‑before‑tap: API allows `tap-keg` even if keg is DISTRIBUTED (RECEIVED is not strictly required).
