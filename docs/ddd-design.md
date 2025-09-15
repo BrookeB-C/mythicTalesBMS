@@ -39,8 +39,8 @@ This document proposes a domain‑driven design (DDD) for a full Brewery Managem
 - Invariants: A Batch packages into one or more PackagingRuns; volumes conserved.
 - Events: BatchPlanned, BatchStarted, BatchPackaged, BatchCompleted.
 
-4) KegInventory
-- Responsibilities: System of record for keg inventory across Locations and Venues; statuses (FILLED, RECEIVED, TAPPED, BLOWN, EMPTY, RETURNED).
+4) Inventory
+- Responsibilities: Own inventory truth across Locations and Venues; statuses (FILLED, RECEIVED, TAPPED, BLOWN, EMPTY, RETURNED).
 - Aggregates: InventoryItem (Keg as item), Location, Adjustment.
 - Invariants: Single owner (tenant); location history immutable; quantity conservation.
 - Events: InventoryReceived, InventoryMoved, InventoryAdjusted, KegStatusChanged.
@@ -91,20 +91,13 @@ This document proposes a domain‑driven design (DDD) for a full Brewery Managem
 - Responsibilities: Cross‑context insights, dashboards.
 - Pattern: Read‑only projections fed by domain events.
 
-14) Production Inventory
-- Responsibilities: Raw materials and WIP inventory for production (malt, hops, yeast, adjuncts, packaging), lots/COAs, consumption, staging finished goods prior to transfer to KegInventory.
-- Aggregates: MaterialItem, MaterialLot, WarehouseLocation, Consumption, FinishedGoodsStaging.
-- Invariants: Lot tracking required for regulated ingredients; consumption cannot exceed on‑hand; conversions follow recipe yields.
-- Events: MaterialReceived, MaterialConsumed, LotAdjusted, FinishedGoodsStaged.
-
 ## Context Map (High‑Level)
 
 - Upstream (providers) → Downstream (consumers):
-  - Production → Production Inventory (MaterialReceived/Consumed; BatchPackaged → FinishedGoodsStaged)
-  - Production Inventory → KegInventory (FinishedGoodsStaged → InventoryReceived)
-  - KegInventory ↔ Distribution (moves, status changes)
+  - Production → Inventory (BatchPackaged triggers InventoryReceived)
+  - Inventory ↔ Distribution (moves, status changes)
   - Sales → Distribution (ShipmentCreated), Billing (InvoiceIssued)
-  - Taproom Ops → KegInventory (KegStatusChanged), Analytics
+  - Taproom Ops → Inventory (KegStatusChanged), Analytics
   - IAM serves all contexts (auth), but each context enforces authorization policies.
 - Anti‑Corruption Layers (ACLs): any external partner POS, ERP, or carrier API.
 
@@ -116,7 +109,7 @@ Taproom Ops (existing, with refinements)
 - Invariants: A Tap has at most one active KegPlacement; remaining ounces ≥ 0; status transitions valid.
 - Events: KegTapped, BeerPoured(ounces), KegBlown, KegUntapped.
 
-KegInventory
+Inventory
 - Aggregates: InventoryItem(id=KegId), Location, Movement, Adjustment.
 - Commands: ReceiveKeg, MoveKeg(from,to), AssignKegToVenue, AdjustInventory(reason,delta).
 - Events: InventoryReceived, InventoryMoved, KegAssignedToVenue, InventoryAdjusted, KegStatusChanged.
@@ -173,7 +166,6 @@ Distribution
 - OrderPlaced, OrderApproved, OrderFulfilled, OrderCancelled
 - ShipmentCreated, ShipmentDispatched, ShipmentDelivered
 - InvoiceIssued, PaymentReceived, InvoiceSettled
-- MaterialReceived, MaterialConsumed, LotAdjusted, FinishedGoodsStaged
 
 ## Security, Tenancy, and Permissions
 
@@ -184,7 +176,7 @@ Distribution
 ## Data Ownership & Storage Strategy
 
 - Single database (schema‑per‑context) inside modular monolith.
-- Clear ownership: KegInventory owns truth for keg location/status; Production Inventory owns raw materials/WIP; Taproom owns placements/events for taps; Sales owns orders; Billing owns invoices/payments.
+- Clear ownership: Inventory owns truth for keg location/status; Taproom owns placements/events for taps; Sales owns orders; Billing owns invoices/payments.
 - Shared keys via stable identifiers (UUIDs) to ease future extraction.
 
 ## Non‑Functional Requirements
@@ -200,8 +192,7 @@ Distribution
 - `com.mythictales.bms.iam`
 - `com.mythictales.bms.catalog`
 - `com.mythictales.bms.production`
-- `com.mythictales.bms.keginventory`
-- `com.mythictales.bms.prodinventory`
+- `com.mythictales.bms.inventory`
 - `com.mythictales.bms.distribution`
 - `com.mythictales.bms.taplist` (existing Taproom Ops)
 - `com.mythictales.bms.sales`
@@ -220,7 +211,7 @@ Taproom Ops (existing flavor)
 - `POST /api/v1/taps/{tapId}/pour {ounces}` → 202 + event BeerPoured
 - `POST /api/v1/taps/{tapId}/blow` → 202 + event KegBlown
 
-KegInventory
+Inventory
 - `POST /api/v1/inventory/receive` → InventoryReceived
 - `POST /api/v1/inventory/{kegId}/move {from,to}` → InventoryMoved
 - `POST /api/v1/inventory/{kegId}/assign {venueId}` → KegAssignedToVenue
@@ -236,15 +227,15 @@ Billing
 
 ## Evolution Plan (Phased Roadmap)
 
-Phase 1 — KegInventory Backbone
-- Add KegInventory context: `InventoryItem` for Keg ownership of location/status.
-- Emit/consume events from Taproom Ops to keep KegInventory truth aligned.
+Phase 1 — Inventory Backbone
+- Add Inventory context: `InventoryItem` for Keg ownership of location/status.
+- Emit/consume events from Taproom Ops to keep Inventory truth aligned.
 
 Phase 2 — Sales & Distribution
 - Introduce Orders and Shipments; fulfill from Inventory allocations; basic invoicing.
 
 Phase 3 — Production
-- Plan/track Batches; produce PackagingRuns; emit FinishedGoodsStaged to Production Inventory; handoff to KegInventory as InventoryReceived.
+- Plan/track Batches; produce PackagingRuns; emit InventoryReceived.
 
 Phase 4 — Billing & Compliance
 - Robust invoicing/payments; compliance reports fed by events.
@@ -255,7 +246,7 @@ Phase 5 — Extract Services (as needed)
 ## Mapping to Current Codebase
 
 - Keep Taproom Ops as is; refactor packages to `com.mythictales.bms.taplist.*` for clarity (already present).
-- Introduce `keginventory` package with `InventoryItem`, `Location`, and listeners to translate Keg events → inventory changes.
+- Introduce `inventory` package with `InventoryItem`, `Location`, and listeners to translate Keg events → inventory changes.
 - Add eventing abstraction (Spring events + outbox table) without external broker initially.
 - DTOs and Controllers per context under `api` packages; avoid cross‑context entity leakage (use IDs and ACLs).
 
@@ -268,3 +259,4 @@ Phase 5 — Extract Services (as needed)
 ---
 
 This design keeps context seams explicit so the system can start as a clean modular monolith and evolve into services when required by scale or organizational structure.
+

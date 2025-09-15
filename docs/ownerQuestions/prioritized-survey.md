@@ -35,9 +35,9 @@ Instructions
 - [ ] Required: a keg must be RECEIVED at the venue to be tappable
 - [ ] Optional: tap can advance DISTRIBUTED → TAPPED directly
 
-7) KegInventory system of record (near term)
+7) Inventory system of record (near term)
 - [ ] Taproom Ops (current module) remains source of truth
-- [ ] Introduce dedicated KegInventory context now
+- [ ] Introduce dedicated Inventory context now
 
 8) Orders & Distribution in near term (next 1–2 releases)
 - [ ] Out of scope for now
@@ -107,8 +107,3 @@ Optional notes / comments
 
 - _____________________________________________________________
 - _____________________________________________________________
-
-21) Production Inventory scope (near term)
-- [ ] Out of scope for now
-- [ ] Track raw materials (lots, receipts, adjustments)
-- [ ] Track WIP + finished goods staging and handoff to KegInventory

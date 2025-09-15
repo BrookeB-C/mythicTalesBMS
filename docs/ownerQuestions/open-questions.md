@@ -24,9 +24,9 @@ This list captures product questions to clarify vision, scope, constraints, and 
 - Should “blow” auto‑end placement always, or support partial detach scenarios?
 - Do we support multiple taps feeding a single keg (manifold) or always 1:1?
 
-## Keg Lifecycle & KegInventory
+## Keg Lifecycle & Inventory
 - Authoritative states include EMPTY, CLEAN, FILLED, DISTRIBUTED, RECEIVED, TAPPED, BLOWN, RETURNED. Any additional states (e.g., LOST, DAMAGED, QA_HOLD)?
-- Who owns the truth of inventory location/status in the short term (Taproom Ops vs. a dedicated KegInventory context)?
+- Who owns the truth of inventory location/status in the short term (Taproom Ops vs. a dedicated Inventory context)?
 - Should “receive” events be required before a taproom can tap a keg (strict workflow) or can they tap distributed kegs directly?
 - Returns: what is the intended flow for blown kegs back to brewery (scan on pickup, batch close, etc.)?
 - Serial numbers: do we scan barcodes/RFIDs or enter manually? Any format constraints?
@@ -35,11 +35,6 @@ This list captures product questions to clarify vision, scope, constraints, and 
 - Do we need to model Recipes and Batches now, or is a simple Beer catalog enough for phase 1?
 - Pricing by product/packaging: defined here or in Sales context later?
 - Any regional variations for naming, compliance (ABV rounding), or label data we should store?
-
-## Production Inventory
-- Do we need to track raw materials and WIP now (lots/COAs, consumption, spoilage/adjustments)?
-- Should finished goods be staged in Production Inventory and then handed off to KegInventory automatically?
-- Any regulatory constraints for lot traceability we must meet from day one?
 
 ## Sales, Orders, Distribution
 - Are wholesale orders in scope for the current phase? If so, who creates/approves them and how do we fulfill?
