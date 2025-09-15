@@ -58,6 +58,11 @@ class RestExceptionHandlerTest {
     public String validate(@Valid @RequestBody Req req) {
       return "ok";
     }
+
+    @GetMapping("/conflict")
+    public String conflict() {
+      throw new org.springframework.dao.OptimisticLockingFailureException("stale");
+    }
   }
 
   @Test
@@ -97,5 +102,13 @@ class RestExceptionHandlerTest {
         .andExpect(jsonPath("$.error", is("Bad Request")))
         .andExpect(jsonPath("$.message", is("Validation failed")))
         .andExpect(jsonPath("$.details.amount", notNullValue()));
+  }
+
+  @Test
+  void returns_problem_json_on_optimistic_lock_409() throws Exception {
+    mvc.perform(get("/api/v1/test/conflict"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.status", is(409)))
+        .andExpect(jsonPath("$.error", is("Conflict")));
   }
 }

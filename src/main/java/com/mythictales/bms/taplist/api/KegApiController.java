@@ -2,10 +2,12 @@ package com.mythictales.bms.taplist.api;
 
 import static com.mythictales.bms.taplist.api.ApiMappers.toDto;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -42,20 +44,21 @@ public class KegApiController {
 
   @GetMapping
   @Operation(summary = "List kegs with optional filters")
-  public List<KegDto> list(
+  public Page<KegDto> list(
       @RequestParam(value = "breweryId", required = false) Long breweryId,
       @RequestParam(value = "status", required = false) KegStatus status,
-      @RequestParam(value = "assignedVenueId", required = false) Long assignedVenueId) {
-    List<Keg> list;
+      @RequestParam(value = "assignedVenueId", required = false) Long assignedVenueId,
+      @ParameterObject @PageableDefault(sort = "serialNumber") Pageable pageable) {
+    Page<Keg> page;
     if (assignedVenueId != null && status != null)
-      list = kegs.findByAssignedVenueIdAndStatus(assignedVenueId, status);
-    else if (assignedVenueId != null) list = kegs.findByAssignedVenueId(assignedVenueId);
+      page = kegs.findByAssignedVenueIdAndStatus(assignedVenueId, status, pageable);
+    else if (assignedVenueId != null) page = kegs.findByAssignedVenueId(assignedVenueId, pageable);
     else if (breweryId != null && status != null)
-      list = kegs.findByBreweryIdAndStatus(breweryId, status);
-    else if (breweryId != null) list = kegs.findByBreweryId(breweryId);
-    else if (status != null) list = kegs.findByStatus(status);
-    else list = kegs.findAll();
-    return list.stream().map(ApiMappers::toDto).collect(Collectors.toList());
+      page = kegs.findByBreweryIdAndStatus(breweryId, status, pageable);
+    else if (breweryId != null) page = kegs.findByBreweryId(breweryId, pageable);
+    else if (status != null) page = kegs.findByStatus(status, pageable);
+    else page = kegs.findAll(pageable);
+    return page.map(ApiMappers::toDto);
   }
 
   @GetMapping("/{id}")
