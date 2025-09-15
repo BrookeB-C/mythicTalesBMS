@@ -1,30 +1,33 @@
 package com.mythictales.bms.taplist.repo;
 
-import com.mythictales.bms.taplist.domain.KegEvent;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import com.mythictales.bms.taplist.domain.KegEvent;
 
 public interface KegEventRepository extends CrudRepository<KegEvent, Long> {
 
-    @Query("""
+  @Query(
+      """
         SELECT e FROM KegEvent e
         JOIN e.placement p
         JOIN p.tap t
         WHERE t.venue.id = :venueId
         ORDER BY e.atTime DESC
     """)
-    List<KegEvent> findVenueEvents(@Param("venueId") Long venueId);
+  List<KegEvent> findVenueEvents(@Param("venueId") Long venueId);
 
-    // (Optional) Back-compat if any older code still calls this name:
-    @Query("""
+  // (Optional) Back-compat if any older code still calls this name:
+  @Query(
+      """
         SELECT e FROM KegEvent e
         JOIN e.placement p
         JOIN p.tap t
         WHERE t.venue.id = :venueId
         ORDER BY e.atTime DESC
     """)
-    List<KegEvent> findByVenueIdOrderByAtTimeDesc(@Param("venueId") Long venueId);
+  List<KegEvent> findByVenueIdOrderByAtTimeDesc(@Param("venueId") Long venueId);
 }
