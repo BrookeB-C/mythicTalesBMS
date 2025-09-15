@@ -12,8 +12,8 @@
   - Build/tests: mvn test (or make test)
   - Verify AccessPolicy grants/denies for roles and affiliations
   - Verify 400/403/404/422 Problem JSON shape from API advice
-- Status: in-progress
-- PR: <tbd>
+- Status: ready-for-review
+- PR: https://github.com/BrookeB-C/mythicTalesBMS/pull/2
 
 ## Notes
 - WebMvcTest uses a minimal test controller in the API package to exercise the scoped RestExceptionHandler without touching MVC controllers.
