@@ -82,13 +82,14 @@ public class TapApiController {
       page = taps.findByVenueBreweryId(user.getBreweryId(), pageable);
     else page = taps.findAll(pageable);
 
-    // Enforce read scope filtering post-query (best effort)
-    List<Tap> filtered =
+    // Enforce read scope filtering post-query (best effort) and map to DTOs
+    List<TapDto> filteredDtos =
         page.getContent().stream()
             .filter(t -> user == null || isAllowedRead(user, t))
+            .map(ApiMappers::toDto)
             .collect(Collectors.toList());
     return new org.springframework.data.domain.PageImpl<>(
-        filtered, pageable, page.getTotalElements());
+        filteredDtos, pageable, page.getTotalElements());
   }
 
   private boolean isAllowedRead(CurrentUser user, Tap tap) {
