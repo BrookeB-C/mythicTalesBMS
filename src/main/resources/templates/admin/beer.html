@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Beers — Link BJCP Style</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body>
+<header>
+  <h1>Beers — Link BJCP Style</h1>
+  <p><a class="btn ghost" th:href="@{/admin/brewery}">⟵ Back to Brewery Admin</a></p>
+</header>
+<main>
+  <form method="get" th:action="@{/admin/beer}" class="inline" style="margin-bottom:.5rem">
+    <label>Guideline Year
+      <select name="year">
+        <option th:value="2021" th:selected="${year == 2021}">2021</option>
+        <option th:value="2015" th:selected="${year == 2015}">2015</option>
+      </select>
+    </label>
+    <button class="btn" type="submit">Apply</button>
+  </form>
+
+  <table class="table">
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th>Current Style (text)</th>
+      <th>BJCP Style</th>
+      <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="b : ${beers}">
+      <td th:text="${b.name}">Beer</td>
+      <td th:text="${b.style}">Style</td>
+      <td>
+        <form method="post" th:action="@{'/admin/beer/' + ${b.id} + '/style'}" class="inline">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="hidden" name="year" th:value="${year}"/>
+          <select name="styleId" required>
+            <option value="" disabled selected>Select BJCP style…</option>
+            <optgroup th:each="entry : ${stylesByCategory}" th:label="${entry.key}">
+              <option th:each="s : ${entry.value}" th:value="${s.id}" th:text="${s.code + ' — ' + s.name}">
+              </option>
+            </optgroup>
+          </select>
+          <button class="btn" type="submit">Link</button>
+        </form>
+      </td>
+      <td>
+        <span th:if="${b.styleRef != null}" th:text="${b.styleRef.code + ' — ' + b.styleRef.name}">18B — APA</span>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</main>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
+

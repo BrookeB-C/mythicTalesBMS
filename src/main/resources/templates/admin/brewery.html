@@ -27,6 +27,7 @@
        th:href="@{/admin/brewery(tab='returned')}">Returned Kegs</a>
     <a th:classappend="${(tab == 'users') ? ' active' : ''}"
        th:href="@{/admin/brewery(tab='users')}">Users</a>
+    <a th:href="@{/admin/beer}">Beers</a>
   </div>
 
   <section th:if="${tab == null or tab == 'taprooms'}">

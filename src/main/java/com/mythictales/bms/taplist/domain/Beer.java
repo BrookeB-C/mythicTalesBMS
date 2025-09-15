@@ -2,6 +2,7 @@ package com.mythictales.bms.taplist.domain;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import com.mythictales.bms.taplist.catalog.domain.BjcpStyle;
 
 @Entity
 public class Beer {
@@ -47,6 +48,13 @@ public class Beer {
   public void setStyle(String style) {
     this.style = style;
   }
+
+  // Optional reference to a BJCP style (normalized)
+  @ManyToOne
+  private BjcpStyle styleRef;
+
+  public BjcpStyle getStyleRef() { return styleRef; }
+  public void setStyleRef(BjcpStyle styleRef) { this.styleRef = styleRef; }
 
   public double getAbv() {
     return abv;
