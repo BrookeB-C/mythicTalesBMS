@@ -98,6 +98,30 @@ Legend
 - Summary: Flyway V3 with targeted indexes for hot paths; adjust repos to use projections.
 - AC: Noticeable reduction in query count/latency on large taprooms.
 
+11) Catalog: Recipe Import Expansion (BeerXML/BeerSmith)
+- Est: 8–12h
+- Summary: Expand importer to map ingredients (fermentables, hops, yeast, misc) and mash steps; add read endpoints.
+- Steps:
+  - Populate child entities in `RecipeImportService` with unit conversions
+  - Add `GET /api/v1/catalog/recipes/{id}` and paginated `GET /api/v1/catalog/recipes`
+  - Enforce tenant scoping (breweryId) in repositories/controllers
+  - Document OpenAPI; Problem JSON for 409 duplicate and validation errors
+- AC:
+  - Import of typical BeerXML/BeerSmith files stores full recipe structure
+  - Duplicate import returns 409 unless `?force=true`
+  - Read endpoints return recipe + children and paginated lists scoped by brewery
+
+12) Catalog: BJCP Styles Lookup & Linking
+- Est: 4–6h
+- Summary: Provide style lookup API and UI hooks; allow beers to reference BJCP style records.
+- Steps:
+  - Expose `GET /api/v1/catalog/styles` and `GET /api/v1/catalog/styles/{id}`
+  - Optional search filter by `code`/`name` and `year`
+  - Add admin UI control on beer forms to link a BJCP style
+- AC:
+  - Styles list/detail endpoints available
+  - Beer edit/admin can link/unlink `styleRef`
+
 ## P2 — Later (Scalable Foundations)
 
 11) Outbox Pattern (skeleton)

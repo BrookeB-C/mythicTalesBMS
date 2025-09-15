@@ -33,3 +33,10 @@ Done criteria
 - Board route renders and auto‑refreshes; low‑volume indicators accurate
 - QR scanning works on modern mobile browsers with graceful fallback
 - Pages pass basic accessibility checks (contrast, labels, keyboard navigation)
+## Catalog — Recipe Import UI
+- Admin page to upload recipe files
+  - Route under Brewery Admin: `/admin/catalog/recipes/import`
+  - Multipart upload (BeerXML/BeerSmith); select brewery context
+  - Show result list of created IDs and any duplicate conflicts
+- Recipes list/detail
+  - Optional: `/admin/catalog/recipes` and `/admin/catalog/recipes/{id}` to view parsed recipes

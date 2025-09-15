@@ -36,6 +36,31 @@ Scope: `/api/v1/**` controllers, DTOs/mappers, security enforcement, validation,
   - Unit tests for `AccessPolicy` and pour validation logic
   - Pagination tests with `Pageable` arguments across taps/venues/kegs
 
+## Catalog — Recipe Import (BeerXML/BeerSmith)
+- Expand importer mapping
+  - Parse and persist `RecipeFermentable`, `RecipeHop`, `RecipeYeast`, `RecipeMisc`, `MashStep`
+  - Unit conversions (L, kg/g, °C) and safe defaults
+- Read endpoints
+  - `GET /api/v1/catalog/recipes/{id}` → Recipe with child components
+  - `GET /api/v1/catalog/recipes?breweryId=...&q=...&page=...` → paginated list
+  - Enforce brewery tenant scoping in repos and controllers
+- Dedup/force semantics
+  - Current: 409 on duplicate `source_hash` unless `?force=true`
+  - Optional (later): if `force=true`, update existing recipe in-place rather than creating a new row
+- OpenAPI + Problem JSON
+  - Document import endpoint (`multipart/form-data`), error codes: `DUPLICATE_RECIPE`, `IMPORT_FAILED`
+- Validation & limits
+  - Validate XML mimetypes/size; reject files > configurable size; return 422 on invalid structure
+- Tests
+  - Import tests (single/multiple recipes), dedup 409 vs `force=true`, ingredient counts match
+  - Read API tests for single + paginated list with tenant scoping
+
+Artifacts
+- `catalog.service.RecipeImportService` (expand mapping)
+- `catalog.api.RecipeImportController` (error model + docs)
+- Repos for Recipe + list endpoints
+- `docs/catalog/recipes-import.md` (keep in sync)
+
 ## KegInventory API (Path Update)
 - Change base path to `/api/v1/keg-inventory` for inventory operations
   - Endpoints: `POST /receive`, `POST /{kegId}/move`, `POST /{kegId}/assign`
@@ -56,3 +81,8 @@ Done criteria
 - CI green; SpotBugs high‑severity clean; CodeQL no new alerts
  - Pour presets enforced; TAPROOM_ADMIN override verified in tests
  - KegInventory endpoints available under `/api/v1/keg-inventory`
+- BJCP styles API
+  - `GET /api/v1/catalog/styles` and `GET /api/v1/catalog/styles/{id}` for lookup
+  - `POST /api/v1/catalog/styles/import` (CSV, SITE_ADMIN)
+  - CSV columns: `code,name,category,subcategory,year,og_min,og_max,fg_min,fg_max,ibu_min,ibu_max,abv_min,abv_max,srm_min,srm_max,notes`
+  - Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
