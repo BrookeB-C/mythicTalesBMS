@@ -40,8 +40,7 @@ public final class ApiMappers {
         t.getTaproom() != null ? t.getTaproom().getId() : null,
         t.getBar() != null ? t.getBar().getId() : null,
         toDto(t.getKeg()),
-        t.getVersion()
-        );
+        t.getVersion());
   }
 
   public static VenueDto toDto(Venue v) {

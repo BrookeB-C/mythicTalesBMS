@@ -17,4 +17,3 @@ public class BusinessValidationException extends RuntimeException {
     return details;
   }
 }
-

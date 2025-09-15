@@ -42,4 +42,3 @@ public class AccessPolicy {
     ensureCanReadTap(user, tap);
   }
 }
-

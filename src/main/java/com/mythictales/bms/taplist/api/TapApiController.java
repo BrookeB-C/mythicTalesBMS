@@ -8,25 +8,24 @@ import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-import org.springframework.validation.annotation.Validated;
-
+import com.mythictales.bms.taplist.api.dto.BlowRequestDto;
 import com.mythictales.bms.taplist.api.dto.KegDto;
+import com.mythictales.bms.taplist.api.dto.PourRequestDto;
 import com.mythictales.bms.taplist.api.dto.TapDto;
 import com.mythictales.bms.taplist.api.dto.TapKegRequestDto;
-import com.mythictales.bms.taplist.api.dto.PourRequestDto;
-import com.mythictales.bms.taplist.api.dto.BlowRequestDto;
 import com.mythictales.bms.taplist.domain.Tap;
 import com.mythictales.bms.taplist.repo.KegRepository;
 import com.mythictales.bms.taplist.repo.TapRepository;
+import com.mythictales.bms.taplist.security.AccessPolicy;
 import com.mythictales.bms.taplist.security.CurrentUser;
 import com.mythictales.bms.taplist.service.TapService;
-import com.mythictales.bms.taplist.security.AccessPolicy;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -39,7 +38,8 @@ public class TapApiController {
   private final KegRepository kegs;
   private final AccessPolicy accessPolicy;
 
-  public TapApiController(TapRepository taps, TapService tapService, KegRepository kegs, AccessPolicy accessPolicy) {
+  public TapApiController(
+      TapRepository taps, TapService tapService, KegRepository kegs, AccessPolicy accessPolicy) {
     this.taps = taps;
     this.tapService = tapService;
     this.kegs = kegs;
@@ -57,15 +57,15 @@ public class TapApiController {
     if (venueId != null) list = taps.findByVenueId(venueId);
     else if (taproomId != null) list = taps.findByTaproomId(taproomId);
     else if (barId != null) list = taps.findByBarId(barId);
-    else if (user != null && user.getTaproomId() != null) list = taps.findByTaproomId(user.getTaproomId());
+    else if (user != null && user.getTaproomId() != null)
+      list = taps.findByTaproomId(user.getTaproomId());
     else if (user != null && user.getBarId() != null) list = taps.findByBarId(user.getBarId());
-    else if (user != null && user.getBreweryId() != null) list = taps.findByVenueBreweryId(user.getBreweryId());
+    else if (user != null && user.getBreweryId() != null)
+      list = taps.findByVenueBreweryId(user.getBreweryId());
     else list = taps.findAll();
     // Enforce read scope filtering
     if (user != null) {
-      list = list.stream()
-          .filter(t -> isAllowedRead(user, t))
-          .collect(Collectors.toList());
+      list = list.stream().filter(t -> isAllowedRead(user, t)).collect(Collectors.toList());
     }
     return list.stream().map(ApiMappers::toDto).collect(Collectors.toList());
   }
@@ -88,7 +88,10 @@ public class TapApiController {
       @AuthenticationPrincipal CurrentUser currentUser) {
     Tap tap = taps.findById(tapId).orElseThrow();
     accessPolicy.ensureCanWriteTap(currentUser, tap);
-    Long actor = body.actorUserId() != null ? body.actorUserId() : (currentUser != null ? currentUser.getId() : null);
+    Long actor =
+        body.actorUserId() != null
+            ? body.actorUserId()
+            : (currentUser != null ? currentUser.getId() : null);
     tapService.tapKeg(tapId, body.kegId(), actor);
     return taps.findById(tapId)
         .map(t -> ResponseEntity.ok(toDto(t)))
@@ -104,7 +107,10 @@ public class TapApiController {
       @AuthenticationPrincipal CurrentUser currentUser) {
     Tap tap = taps.findById(tapId).orElseThrow();
     accessPolicy.ensureCanWriteTap(currentUser, tap);
-    Long actor = req.actorUserId() != null ? req.actorUserId() : (currentUser != null ? currentUser.getId() : null);
+    Long actor =
+        req.actorUserId() != null
+            ? req.actorUserId()
+            : (currentUser != null ? currentUser.getId() : null);
     tapService.pour(tapId, req.ounces(), actor, req.allowOverpourToBlow());
     return taps.findById(tapId)
         .map(Tap::getKeg)

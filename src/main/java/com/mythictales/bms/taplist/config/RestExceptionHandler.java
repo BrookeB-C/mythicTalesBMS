@@ -30,7 +30,9 @@ public class RestExceptionHandler {
 
   private ResponseEntity<Problem> build(HttpStatus status, String message, Object details) {
     String traceId = Optional.ofNullable(MDC.get("traceId")).orElse(MDC.get("X-Request-Id"));
-    Problem body = new Problem(status.value(), status.getReasonPhrase(), message, details, Instant.now(), traceId);
+    Problem body =
+        new Problem(
+            status.value(), status.getReasonPhrase(), message, details, Instant.now(), traceId);
     return ResponseEntity.status(status).body(body);
   }
 
