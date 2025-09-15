@@ -19,7 +19,7 @@
   - MVC smoke: exercise tap admin flows to confirm redirect-based responses and no API-style 422s
   - Tests: mvn test (Java 17/21) — verified green locally per user
 - Status: ready-for-review
-- PR: <link will be added after push>
+- PR: https://github.com/BrookeB-C/mythicTalesBMS/pull/1
 
 ## Notes
 - API error model (Problem JSON) is scoped to REST controllers via @RestControllerAdvice(basePackages = "com.mythictales.bms.taplist.api"), avoiding cross-talk with MVC.

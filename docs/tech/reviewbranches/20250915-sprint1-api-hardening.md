@@ -8,7 +8,7 @@
 - Risk: low
 - Test Plan: Build and manual checks via swagger; verify 400/403/404/422 behaviors on representative endpoints
 - Status: ready-for-review
-- PR: <tbd>
+- PR: https://github.com/BrookeB-C/mythicTalesBMS/pull/1
 
 ## Notes
 - Aligns with Priority 0 tasks: consistent error model and validation.

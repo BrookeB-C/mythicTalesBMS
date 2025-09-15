@@ -39,6 +39,7 @@ replay_pid*
 
 # Caches
 .cache/
+.m2/
 
 # Test artifacts
 jacoco.exec
