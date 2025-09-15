@@ -11,6 +11,16 @@ Scope: DB schema/migrations, profiles, observability, CI/CD, infrastructure.
   - Configure `spring.jpa.hibernate.ddl-auto=none` in prod
 - Seed data (dev only)
   - Move demo data from `DataInitializer` behind `@Profile("dev")` or into `V2__seed_demo.sql` marked dev-only
+ - Config properties
+  - Bind feature flags with `@ConfigurationProperties(prefix = "bms")`
+  - Defaults:
+    - `taproom.lowVolume.defaultPercent=15`
+    - `taproom.lowVolume.scope=venue`
+    - `taproom.lowVolume.notifyRoles=[TAPROOM_ADMIN,BAR_ADMIN]`
+    - `taproom.pour.overrideRole=TAPROOM_ADMIN`
+    - `ui.bigboard.refreshSeconds=15`
+    - `scan.input=camera`, `scan.qr.payload=json`
+    - `keginventory.apiBasePath=/api/v1/keg-inventory`
 
 ## Sprint 2 — Observability & Logging
 - Add Actuator + Micrometer Prometheus registry
@@ -18,6 +28,8 @@ Scope: DB schema/migrations, profiles, observability, CI/CD, infrastructure.
   - Include `traceId` and `userId` in logs (via filter/interceptor)
 - Health and readiness probes
   - Enable `/actuator/health` and `/actuator/info` endpoints
+ - Release operations
+  - Document weekly Friday release window and rollback steps (prior image + DB rollback checklist)
 
 ## Sprint 3 — DB & CI Enhancements
 - Postgres enablement
@@ -41,4 +53,3 @@ Done criteria
 - Database created and migrated via Flyway
 - Health and metrics endpoints available; logs include correlation ids
 - CI green; Docker image builds in CI; manual smoke test passes with Postgres
-

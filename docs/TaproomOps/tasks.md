@@ -37,6 +37,8 @@ This is a scoped backlog for the Taproom Operations context (taps, keg lifecycle
 - [ ] Add visual warnings for low volume (15% threshold) and blown kegs; ensure the threshold is configurable with default 15%.
 - [ ] Improve accessibility (ARIA labels for SVG pint, focus states, error summaries).
 - [ ] Replace deprecated Thymeleaf fragment syntax (done for footer) sweep full templates.
+ - [ ] Big‑board display mode: dedicated MVC route `GET /taplist/board?venueId=...`; auto‑refresh every 15s; show beer name, style, ABV, fill %; responsive for TV displays.
+ - [ ] QR scanning (camera/PWA): parse JSON payload with `serial` and `breweryId`; graceful fallback to manual entry.
 
 ## Security & Roles
 - [ ] Confirm route guards for `TAPROOM_ADMIN`, `TAPROOM_USER`, and brewery/bar admins.

@@ -114,19 +114,33 @@ The following decisions reflect sponsor input and drive near‑term scope:
 - Tenancy: Multi‑tenant, shared deployment with row‑level scoping.
 - Auth: Local accounts only for now (no SSO initially).
 - Taproom pours: Fixed presets (4/8/12/16/20 oz).
-- Low‑volume threshold: 15% — UI indicator plus an internal domain event when crossing threshold.
+- Low‑volume threshold: Default 15% — UI indicator plus an internal domain event when crossing threshold; per‑venue configurable threshold.
 - Receive‑before‑tap: Optional (DISTRIBUTED → TAPPED is allowed).
+- Pour presets override: TAPROOM_ADMIN may override preset list for a pour.
 - KegInventory: Introduce dedicated context now (near‑term priority).
 - Orders/Distribution: Out of scope for the next 1–2 releases.
 - Invoicing/Payments: Out of scope for the next 1–2 releases.
 - KPIs focus: Time‑to‑tap, Keg turnaround time, Invoice latency.
-- Serial numbers: Manual entry and barcode/QR supported.
+- Scanning: Camera/PWA with QR codes; JSON payload embedded in QR including brewery id (e.g., `{ "serial":"...","breweryId":123 }`).
 - Manifold support: Not needed (1:1 tap:keg only).
 - Compliance: None in near term.
 - UX targets: Include mobile admin needs and a big‑board taplist display mode.
-- Environments: Dev and Staging (Prod later); weekly release cadence.
+- Environments: Dev and Staging (Prod later); weekly release cadence every Friday; no change freeze.
 - Data retention: Keep 24 months of event history, then archive.
 - Accessibility: Aim for WCAG AA.
+
+## Configuration & Feature Flags (from decisions)
+
+- `bms.taproom.lowVolume.defaultPercent` = 15
+- `bms.taproom.lowVolume.scope` = per‑venue (override allowed)
+- `bms.taproom.lowVolume.notifyRoles` = [TAPROOM_ADMIN, BAR_ADMIN]
+- `bms.taproom.pour.overrideRole` = TAPROOM_ADMIN
+- `bms.ui.bigboard.refreshSeconds` = 15 (auto)
+- `bms.scan.input` = camera
+- `bms.scan.qr.payload` = json (expects `serial`, `breweryId`)
+- `bms.keginventory.apiBasePath` = `/api/v1/keg-inventory`
+- `bms.release.window` = Friday (weekly)
+- `bms.archiving.access` = admin-export
 
 ## Core Aggregates, Commands, Events (Selected)
 
@@ -245,9 +259,10 @@ Taproom Ops (existing flavor)
 - `POST /api/v1/taps/{tapId}/blow` → 202 + event KegBlown
 
 KegInventory
-- `POST /api/v1/inventory/receive` → InventoryReceived
-- `POST /api/v1/inventory/{kegId}/move {from,to}` → InventoryMoved
-- `POST /api/v1/inventory/{kegId}/assign {venueId}` → KegAssignedToVenue
+- Base path: `/api/v1/keg-inventory` (a redirect/alias from `/api/v1/inventory` can be provided later)
+- `POST /api/v1/keg-inventory/receive` → InventoryReceived
+- `POST /api/v1/keg-inventory/{kegId}/move {from,to}` → InventoryMoved
+- `POST /api/v1/keg-inventory/{kegId}/assign {venueId}` → KegAssignedToVenue
 
 Sales
 - `POST /api/v1/orders` → OrderPlaced
@@ -263,6 +278,7 @@ Billing
 Phase 1 — KegInventory Backbone
 - Add KegInventory context: `InventoryItem` for Keg ownership of location/status.
 - Emit/consume events from Taproom Ops to keep KegInventory truth aligned.
+ - Add per‑venue low‑volume threshold config; emit `LowVolumeThresholdReached` once per placement.
 
 Phase 2 — Sales & Distribution
 - Introduce Orders and Shipments; fulfill from Inventory allocations; basic invoicing.
@@ -282,6 +298,7 @@ Phase 5 — Extract Services (as needed)
 - Introduce `keginventory` package with `InventoryItem`, `Location`, and listeners to translate Keg events → inventory changes.
 - Add eventing abstraction (Spring events + outbox table) without external broker initially.
 - DTOs and Controllers per context under `api` packages; avoid cross‑context entity leakage (use IDs and ACLs).
+ - Add configuration binding (`@ConfigurationProperties("bms.*")`) to surface flags listed above.
 
 ## Open Questions
 

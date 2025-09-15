@@ -41,7 +41,7 @@ Roles (from codebase): `SITE_ADMIN`, `BREWERY_ADMIN`, `TAPROOM_ADMIN`, `BAR_ADMI
 - `POST /api/v1/taps/{tapId}/pour`
   - Body: `{ "ounces": number, "actorUserId"?: number, "expectedKegVersion"?: number }`
   - 200: `Keg` with updated `remainingOunces` and derived fill percent; 422 if exceeds remaining.
-  - Constraints: `ounces` must match fixed presets (4/8/12/16/20) unless admin override flag is set.
+  - Constraints: `ounces` must match fixed presets (4/8/12/16/20) unless the user has TAPROOM_ADMIN role (override).
 - `POST /api/v1/taps/{tapId}/blow`
   - Body: `{ "actorUserId"?: number, "expectedKegVersion"?: number }`
   - Effects: Marks keg blown; detaches from tap; records event.
@@ -150,6 +150,18 @@ Taproom shape:
 - `GET /api/v1/users` (SITE_ADMIN)
   - 200: `[ { "id", "username", "role", "breweryId"?, "barId"?, "taproomId"? } ]`
 
+— KegInventory —
+- Base path: `/api/v1/keg-inventory` (explicit). A backward‑compat alias `/api/v1/inventory` may be added as a redirect later.
+- `POST /api/v1/keg-inventory/receive`
+  - Body: `{ "kegId": number, "venueId": number }`
+  - Effect: InventoryReceived; sets keg status and assigned venue accordingly.
+- `POST /api/v1/keg-inventory/{kegId}/move`
+  - Body: `{ "fromLocationId": number, "toLocationId": number }`
+  - Effect: InventoryMoved; updates location history.
+- `POST /api/v1/keg-inventory/{kegId}/assign`
+  - Body: `{ "venueId": number }`
+  - Effect: KegAssignedToVenue.
+
 **Filtering & Sorting Examples**
 - `GET /api/v1/kegs?breweryId=3&status=DISTRIBUTED&assignedVenueId=10&page=0&size=50&sort=serialNumber,asc`
 - `GET /api/v1/taps?taproomId=5&sort=number,asc`
@@ -213,5 +225,8 @@ POST /api/v1/kegs/42/distribute
 - Public unauthenticated endpoints, complex reporting, and bulk upload are out of scope for this iteration.
 
 Additional Notes (from product decisions)
-- Low‑volume alert: when a keg’s remaining falls below 15%, emit an internal event for alerting/analytics and show a UI indicator.
+- Pour sizes: fixed presets; controllers validate unless TAPROOM_ADMIN override is present.
+- Low‑volume alert: default 15% threshold, configurable per‑venue; emit an internal event for alerting/analytics and show a UI indicator; notify TAPROOM_ADMIN and BAR_ADMIN.
 - Receive‑before‑tap: API allows `tap-keg` even if keg is DISTRIBUTED (RECEIVED is not strictly required).
+- Big‑board: add a dedicated MVC route `GET /taplist/board?venueId=...` (read‑only, lightweight payload) with auto‑refresh every 15s.
+- QR scanning: camera/PWA should parse JSON payload that includes `serial` and `breweryId`.

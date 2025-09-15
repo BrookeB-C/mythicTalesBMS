@@ -21,6 +21,7 @@ Legend
   - Unit tests covering happy paths and edge cases (over‑pour, null keg, etc.).
 - AC:
   - Tests green; REST and MVC flows behave identical to current implementation.
+  - Config flags honored (see below) for pour presets and receive‑before‑tap; only TAPROOM_ADMIN can override pour presets.
 
 2) Domain Events (in‑process) for key actions
 - Est: 3–5h
@@ -41,6 +42,8 @@ Legend
   - Add threshold check in pour/blow handlers; publish `LowVolumeThresholdReached` when crossing 15%.
 - Deliverables: Migration, listeners, repositories, simple DTOs.
 - AC: Taplist and event history can be served from projections with parity to current queries. Low‑volume event is emitted exactly once per placement on threshold crossing; UI shows indicator.
+  - Threshold comes from venue config; default from `bms.taproom.lowVolume.defaultPercent`.
+  - Notification prepared for TAPROOM_ADMIN and BAR_ADMIN (hook method or placeholder listener).
 
 4) REST Error Model + Validation (problem+json)
 - Est: 4–6h
@@ -64,10 +67,11 @@ Legend
 - Summary: Establish KegInventory as a distinct context/component while reusing existing Keg tables.
 - Steps:
   - Create `keginventory` packages (domain/app/api/repo) to encapsulate inventory operations.
-  - Add endpoints under `/api/v1/inventory` for receive/move/assign (stubs can defer complex rules).
+  - Add endpoints under `/api/v1/keg-inventory` for receive/move/assign (stubs can defer complex rules).
   - Wire Taproom Ops events to update inventory state (status/assigned venue).
 - Deliverables: Minimal KegInventory service + API, event listeners.
 - AC: Inventory endpoints operate with current schema; events keep KegInventory consistent.
+  - Backward‑compat alias (optional): document or implement a 301 from `/api/v1/inventory/*` to `/api/v1/keg-inventory/*`.
 
 ## P1 — Next Up (Quality, Ops, and Guardrails)
 
@@ -87,6 +91,7 @@ Legend
 - Est: 4–6h
 - Summary: Switch Thymeleaf pages to read from projections service; add big‑board display mode (read‑only, auto‑refresh).
 - AC: Same UI, faster queries, no behavioral changes; big‑board view available with auto‑refresh.
+  - MVC route exists: `GET /taplist/board?venueId=...` renders read‑only board, refreshes every 15s.
 
 10) Additional Indexes and Query Tuning
 - Est: 2–4h
@@ -115,6 +120,16 @@ Legend
 - DB migrations: Flyway (create V2, V3... in `src/main/resources/db/migration`).
 - Tests: Put new tests under `src/test/java/.../taplist` with clear naming.
 - Docs: Update `docs/TaproomOps/tasks.md` and add ADRs when introducing architecture mechanisms (events, outbox, projections).
+
+Config flags to implement/read (application.yml via @ConfigurationProperties)
+- `bms.taproom.lowVolume.defaultPercent=15`
+- `bms.taproom.lowVolume.scope=venue`
+- `bms.taproom.lowVolume.notifyRoles=[TAPROOM_ADMIN,BAR_ADMIN]`
+- `bms.taproom.pour.overrideRole=TAPROOM_ADMIN`
+- `bms.ui.bigboard.refreshSeconds=15`
+- `bms.scan.input=camera` (camera/PWA)
+- `bms.scan.qr.payload=json` (expects fields: `serial`, `breweryId`)
+- `bms.keginventory.apiBasePath=/api/v1/keg-inventory`
 
 Notes based on sponsor decisions
 - Out of scope near‑term: Wholesale Orders/Distribution, Invoicing/Payments.
