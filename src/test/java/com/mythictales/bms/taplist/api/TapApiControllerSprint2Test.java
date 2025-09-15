@@ -81,4 +81,17 @@ class TapApiControllerSprint2Test {
         .andExpect(jsonPath("$.content[1].number", is(2)))
         .andExpect(jsonPath("$.totalElements", is(2)));
   }
+
+  @Test
+  void blow_with_expectedVersion_mismatch_returns_409() throws Exception {
+    Tap tap = new Tap(3);
+    given(tapRepository.findById(20L)).willReturn(Optional.of(tap));
+
+    String body = "{\n" + "  \"expectedVersion\": 9\n" + "}";
+
+    mvc.perform(post("/api/v1/taps/20/blow").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.status", is(409)))
+        .andExpect(jsonPath("$.error", is("Conflict")));
+  }
 }
