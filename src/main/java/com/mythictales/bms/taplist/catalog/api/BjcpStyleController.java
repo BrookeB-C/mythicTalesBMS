@@ -27,14 +27,26 @@ public class BjcpStyleController {
   }
 
   @GetMapping
-  @Operation(summary = "List BJCP styles (optional year filter)")
+  @Operation(summary = "List BJCP styles (server-side filters: year, q on code/name)")
   public Page<BjcpStyle> list(@RequestParam(value = "year", required = false) Integer year,
+                              @RequestParam(value = "q", required = false) String q,
                               @RequestParam(value = "page", defaultValue = "0") int page,
-                              @RequestParam(value = "size", defaultValue = "50") int size) {
-    var pr = PageRequest.of(Math.max(0,page), Math.max(1, Math.min(200,size)), Sort.by("code").ascending());
-    if (year == null) return repo.findAll(pr);
-    // Simple manual filter when year provided (repo can be extended with derived query if needed)
-    return repo.findAll(pr).map(s -> s).map(s -> s); // placeholder to keep method; client can filter by year if needed
+                              @RequestParam(value = "size", defaultValue = "50") int size,
+                              @RequestParam(value = "sort", defaultValue = "code,asc") String sort) {
+    Sort srt = parseSort(sort, "code");
+    var pr = PageRequest.of(Math.max(0,page), Math.max(1, Math.min(200,size)), srt);
+    return repo.search(year, (q!=null && !q.isBlank())? q.trim(): null, pr);
+  }
+
+  private Sort parseSort(String sort, String def) {
+    try {
+      String[] p = sort.split(",");
+      String prop = p[0];
+      String dir = p.length>1? p[1] : "asc";
+      return "desc".equalsIgnoreCase(dir) ? Sort.by(prop).descending() : Sort.by(prop).ascending();
+    } catch(Exception e){
+      return Sort.by(def).ascending();
+    }
   }
 
   @GetMapping("/{id}")
@@ -56,4 +68,3 @@ public class BjcpStyleController {
     }
   }
 }
-

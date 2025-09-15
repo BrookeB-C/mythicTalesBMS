@@ -14,11 +14,11 @@ public class BjcpSeedConfig {
   CommandLineRunner seedBjcpStyles(StyleImportService importer){
     return args -> {
       try (InputStream in = getClass().getResourceAsStream("/bjcp/bjcp-2021.csv")) {
-        if (in != null) {
-          importer.importCsv(in, true);
-        }
+        // Prefer 2015 if present; fallback to 2021 sample
+        InputStream src = getClass().getResourceAsStream("/bjcp/bjcp-2015.csv");
+        InputStream use = src != null ? src : in;
+        if (use != null) importer.importCsv(use, true);
       } catch (Exception ignored) {}
     };
   }
 }
-

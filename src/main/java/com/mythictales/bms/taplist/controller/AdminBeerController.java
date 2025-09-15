@@ -31,7 +31,7 @@ public class AdminBeerController {
 
   @GetMapping
   public String page(@AuthenticationPrincipal CurrentUser user,
-                     @RequestParam(value = "year", required = false, defaultValue = "2021") Integer year,
+                     @RequestParam(value = "year", required = false, defaultValue = "2015") Integer year,
                      Model model) {
     List<Beer> beerList = new ArrayList<>();
     if (user != null && user.getBreweryId() != null) {
@@ -64,7 +64,7 @@ public class AdminBeerController {
   @PostMapping("/{beerId}/style")
   public String setStyle(@PathVariable Long beerId,
                          @RequestParam("styleId") Long styleId,
-                         @RequestParam(value = "year", required = false, defaultValue = "2021") Integer year) {
+                         @RequestParam(value = "year", required = false, defaultValue = "2015") Integer year) {
     Beer b = beers.findById(beerId).orElseThrow();
     BjcpStyle style = styles.findById(styleId).orElseThrow();
     b.setStyleRef(style);
@@ -72,4 +72,3 @@ public class AdminBeerController {
     return "redirect:/admin/beer?year=" + year;
   }
 }
-

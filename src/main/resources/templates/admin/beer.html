@@ -14,8 +14,8 @@
   <form method="get" th:action="@{/admin/beer}" class="inline" style="margin-bottom:.5rem">
     <label>Guideline Year
       <select name="year">
-        <option th:value="2021" th:selected="${year == 2021}">2021</option>
         <option th:value="2015" th:selected="${year == 2015}">2015</option>
+        <option th:value="2021" th:selected="${year == 2021}">2021</option>
       </select>
     </label>
     <button class="btn" type="submit">Apply</button>
@@ -58,4 +58,3 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-
