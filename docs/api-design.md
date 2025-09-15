@@ -149,6 +149,32 @@ Taproom shape:
 - `GET /api/v1/users` (SITE_ADMIN)
   - 200: `[ { "id", "username", "role", "breweryId"?, "barId"?, "taproomId"? } ]`
 
+— KegInventory —
+- Path: base remains `/api/v1/inventory` (naming aligns with KegInventory context; path can evolve later).
+- `POST /api/v1/inventory/receive`
+  - Body: `{ "kegId": number, "venueId": number }`
+  - Effect: InventoryReceived; sets keg status and assigned venue accordingly.
+- `POST /api/v1/inventory/{kegId}/move`
+  - Body: `{ "fromLocationId": number, "toLocationId": number }`
+  - Effect: InventoryMoved; updates location history.
+- `POST /api/v1/inventory/{kegId}/assign`
+  - Body: `{ "venueId": number }`
+  - Effect: KegAssignedToVenue.
+
+— Production Inventory (Future) —
+- Scope: Raw materials and WIP inventory; lot tracking and finished goods staging prior to handoff to KegInventory.
+- `POST /api/v1/prod-inventory/materials/receive`
+  - Body: `{ "itemCode": string, "lot": string, "quantity": number, "uom": string, "warehouseLocationId"?: number }`
+  - Effect: MaterialReceived; increases on-hand for lot/location.
+- `POST /api/v1/prod-inventory/materials/{id}/consume`
+  - Body: `{ "lot": string, "quantity": number, "uom": string, "batchId": number }`
+  - Effect: MaterialConsumed against a production batch; enforces on-hand and lot validity.
+- `POST /api/v1/prod-inventory/finished-goods/stage`
+  - Body: `{ "batchId": number, "beerId": number, "sizeSpecId": number, "kegCount": number }`
+  - Effect: FinishedGoodsStaged; prepares transfer to KegInventory as InventoryReceived per keg.
+- `POST /api/v1/prod-inventory/finished-goods/{stagingId}/transfer-to-keg-inventory`
+  - Effect: Emits InventoryReceived events for KegInventory and closes staging record.
+
 **Filtering & Sorting Examples**
 - `GET /api/v1/kegs?breweryId=3&status=DISTRIBUTED&assignedVenueId=10&page=0&size=50&sort=serialNumber,asc`
 - `GET /api/v1/taps?taproomId=5&sort=number,asc`
@@ -210,4 +236,3 @@ POST /api/v1/kegs/42/distribute
 
 **Non-Goals (Now)**
 - Public unauthenticated endpoints, complex reporting, and bulk upload are out of scope for this iteration.
-

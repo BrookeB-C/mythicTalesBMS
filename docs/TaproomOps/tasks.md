@@ -44,8 +44,8 @@ This is a scoped backlog for the Taproom Operations context (taps, keg lifecycle
 - [ ] Ensure cross‑venue access is blocked (tenant and venue scoping at query layer).
 
 ## Integrations (Internal)
-- [ ] Prepare integration with `Inventory` context (future): translate taproom events → inventory status changes.
-- [ ] Publish lightweight integration events via outbox once Inventory exists.
+- [ ] Prepare integration with `KegInventory` context (future): translate taproom events → inventory status changes.
+- [ ] Publish lightweight integration events via outbox once KegInventory exists.
 
 ## Observability & Ops
 - [ ] Structured logs for commands and events (tapId, venueId, kegId, actorUserId).
