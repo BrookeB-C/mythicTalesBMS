@@ -14,8 +14,8 @@
   - Build/tests: mvn test (JDK 17)
   - Verify 409 when expectedVersion mismatches; ensure 409 Problem JSON
   - Verify /api/v1/taps accepts pageable params and sorts by number by default
-- Status: in-progress
-- PR: <tbd>
+- Status: ready-for-review
+- PR: https://github.com/BrookeB-C/mythicTalesBMS/pull/3
 
 ## Notes
 - We chose request field `expectedVersion` over If-Match ETag for simplicity; handler already maps OptimisticLockingFailureException to 409.
