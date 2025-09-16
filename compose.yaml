@@ -1,0 +1,55 @@
+services:
+  postgres-staging:
+    image: postgres:16-alpine
+    container_name: bms-postgres-staging
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${STAGING_POSTGRES_DB}
+      - POSTGRES_USER=${STAGING_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${STAGING_POSTGRES_PASSWORD}
+    ports:
+      - "${STAGING_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata-staging:/var/lib/postgresql/data
+    networks:
+      - bms-net
+    profiles: ["staging"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STAGING_POSTGRES_USER} -d ${STAGING_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-prod:
+    image: postgres:16-alpine
+    container_name: bms-postgres-prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${PRODUCTION_POSTGRES_DB}
+      - POSTGRES_USER=${PRODUCTION_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${PRODUCTION_POSTGRES_PASSWORD}
+    ports:
+      - "${PRODUCTION_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    networks:
+      - bms-net
+    profiles: ["prod"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PRODUCTION_POSTGRES_USER} -d ${PRODUCTION_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata-staging:
+  pgdata-prod:
+
+networks:
+  bms-net:
+    driver: bridge
+

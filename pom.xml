@@ -70,6 +70,12 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>
+    <!-- Postgres JDBC driver -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
     <!-- Mockito: rely on mockito-core via spring-boot-starter-test.
          Subclass mock-maker is configured under src/test/resources. -->
   </dependencies>

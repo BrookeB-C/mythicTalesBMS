@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:${PRODUCTION_POSTGRES_PORT:5432}/${PRODUCTION_POSTGRES_DB:mythic_prod}
+    username: ${PRODUCTION_POSTGRES_USER:bms}
+    password: ${PRODUCTION_POSTGRES_PASSWORD:changeme-prod}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+  flyway:
+    enabled: true
+  h2:
+    console:
+      enabled: false
+
+springdoc:
+  swagger-ui:
+    enabled: false
+
