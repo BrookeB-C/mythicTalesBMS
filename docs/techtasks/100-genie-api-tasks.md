@@ -85,5 +85,31 @@ Done criteria
   - `GET /api/v1/catalog/styles` and `GET /api/v1/catalog/styles/{id}` for lookup
   - `POST /api/v1/catalog/styles/import` (CSV, SITE_ADMIN)
   - CSV columns: `code,name,category,subcategory,year,og_min,og_max,fg_min,fg_max,ibu_min,ibu_max,abv_min,abv_max,srm_min,srm_max,notes`
-  - Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
+ - Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
   - Server-side filters: `year` and `q` (matches `code` or `name`), plus `page/size/sort`
+
+## Production — Run Planning MVP
+- Entities & lists
+  - Add `GET /api/v1/production/facilities`, `/brew-systems`, `/fermentors` with capacity + unit fields.
+  - Add `GET /api/v1/production/fermentors/{id}/schedule` (calendar view).
+- Plan runs
+  - `POST /api/v1/production/runs` with `brewSystemId`, optional `fermentorId`, `recipeId` or on‑run recipe, `startAt`, scaled target volume.
+  - Validate brew system availability; warn if fermentor not available for expected finish; allow optional assignment.
+  - `PATCH /api/v1/production/runs/{id}` to edit recipe on the run; optional save to catalog as NEW or REPLACE.
+- Shopping list
+  - `GET /api/v1/production/runs/{id}/shopping-list` computed from scaled recipe against Production Inventory.
+- OpenAPI + tests
+  - Document fields, warning semantics, and scaling; add MockMvc tests for happy path and warnings.
+
+## Partners — External Recipients
+- Directory endpoints
+  - `GET/POST /api/v1/partners/external-venues`, `GET/POST /api/v1/partners/distributors` (tenant‑scoped).
+- Keg distribution (external)
+  - Extend `POST /api/v1/kegs/{id}/distribute` to accept either `venueId` or an external partner id; validate mutual exclusivity.
+  - Kegs sent to external partners remain `DISTRIBUTED` until `POST /return`.
+- OpenAPI + tests
+  - Add schemas for partner entities; tests for distribute→return flows (internal vs external).
+
+## IAM — Roles Alignment
+- Define additional roles aligned to requirements: `BREWER`, `HEAD_BREWER`, `TAPROOM_MANAGER` (map to contexts and permissions).
+- Update access policy checks for new roles where applicable (production planning endpoints).
