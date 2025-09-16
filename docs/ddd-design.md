@@ -34,16 +34,17 @@ This document proposes a domain‑driven design (DDD) for a full Brewery Managem
 - Events: BeerCreated, RecipeVersioned, PriceChanged.
 
 3) Production
-- Responsibilities: Plan and execute batches; track states (planned → brewing → fermenting → packaged → complete).
-- Aggregates: Batch, Fermenter, Tank, PackagingRun.
-- Invariants: A Batch packages into one or more PackagingRuns; volumes conserved.
-- Events: BatchPlanned, BatchStarted, BatchPackaged, BatchCompleted.
+- Responsibilities: Plan and execute batches; schedule brew systems and fermentors; track states (planned → brewing → fermenting → packaged → complete); support recipe scaling and on‑run modifications with optional catalog save.
+- Aggregates: ProductionFacility, BrewSystem (capacity, unit), Fermentor (capacity, unit, schedule), ProductionRun (links to Recipe version), PackagingRun.
+- Invariants: A ProductionRun reserves a BrewSystem at `startAt` and (optionally) a Fermentor for the expected fermentation window; volumes conserved across PackagingRuns; recipe edits on a run do not mutate the catalog unless explicitly saved (new or replace).
+- Events: RunPlanned, BrewSystemReserved, FermentorReserved, BatchStarted, BatchPackaged, BatchCompleted, ShoppingListGenerated.
 
 4) KegInventory
 - Responsibilities: System of record for keg inventory across Locations and Venues; statuses (FILLED, RECEIVED, TAPPED, BLOWN, EMPTY, RETURNED).
 - Aggregates: InventoryItem (Keg as item), Location, Adjustment.
 - Invariants: Single owner (tenant); location history immutable; quantity conservation.
 - Events: InventoryReceived, InventoryMoved, InventoryAdjusted, KegStatusChanged.
+- External recipients: Track `ExternalPartner` entities (ExternalVenue, Distributor). Kegs distributed to external partners remain in `DISTRIBUTED` state until returned; no internal `RECEIVED` event is recorded.
 
 5) Distribution & Logistics
 - Responsibilities: Shipments, routes, proof of delivery, returns (empties).
@@ -156,9 +157,9 @@ KegInventory
 - Events: InventoryReceived, InventoryMoved, KegAssignedToVenue, InventoryAdjusted, KegStatusChanged.
 
 Production
-- Aggregates: Batch, PackagingRun.
-- Commands: PlanBatch, StartBatch, RecordPackagingRun, CompleteBatch.
-- Events: BatchPlanned, BatchStarted, BatchPackaged, BatchCompleted.
+- Aggregates: ProductionFacility, BrewSystem, Fermentor, ProductionRun, PackagingRun.
+- Commands: PlanRun(brewSystem,recipe,startAt,fermentor?), UpdateRunRecipe(runId, changes, saveToCatalog?), ReserveFermentor(runId, fermentorId), RecordPackagingRun, CompleteRun.
+- Events: RunPlanned, BrewSystemReserved, FermentorReserved, BatchStarted, BatchPackaged, BatchCompleted, ShoppingListGenerated.
 
 Sales
 - Aggregates: Order, OrderLine.
@@ -178,6 +179,7 @@ Distribution
 ## Domain Policies & Invariants (Examples)
 
 - Keg lifecycle: FILLED → RECEIVED (at venue) → TAPPED → BLOWN/UNTAPPED → EMPTY → RETURNED/REFILLED.
+- External distribution: For Distributor/External Venue deliveries, lifecycle is FILLED → DISTRIBUTED → RETURNED (no internal RECEIVED step).
 - A Keg cannot be tapped unless status=RECEIVED and assigned to the Tap’s Venue.
 - Pour never increases remaining ounces; when remaining ≤ 0, status transitions to BLOWN and placement ends.
 - Inventory movements are immutable facts; adjustments require reasons and audit trails.
@@ -213,10 +215,16 @@ Distribution
  - MaterialReceived, MaterialConsumed, LotAdjusted, FinishedGoodsStaged
 >>>>>>> Stashed changes
 
+## Partner Directory (External)
+
+- Entity: ExternalPartner with subtypes ExternalVenue and Distributor; owned by Brewery (tenant‑scoped).
+- Purpose: allow selecting external recipients for keg distribution; capture contact and compliance metadata.
+- Interactions: KegInventory references ExternalPartner on DISTRIBUTED movements; Distribution context may use partners for routing later.
+
 ## Security, Tenancy, and Permissions
 
 - Multi‑tenancy: Tenant=Brewery; every aggregate carries tenant ownership. Queries always scoped by tenant.
-- Roles map to contexts: SITE_ADMIN, BREWERY_ADMIN, TAPROOM_ADMIN, BAR_ADMIN, TAPROOM_USER, FINANCE, LOGISTICS, PRODUCTION.
+- Roles map to contexts: SITE_ADMIN, BREWERY_ADMIN, TAPROOM_ADMIN, BAR_ADMIN, TAPROOM_USER, FINANCE, LOGISTICS, PRODUCTION, BREWER, HEAD_BREWER, TAPROOM_MANAGER.
 - Policies enforce least privilege per bounded context.
 
 ## Data Ownership & Storage Strategy

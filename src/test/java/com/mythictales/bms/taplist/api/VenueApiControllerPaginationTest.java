@@ -17,12 +17,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.mythictales.bms.taplist.domain.Venue;
 import com.mythictales.bms.taplist.repo.VenueRepository;
 
-class VenueApiControllerPaginationTest {
+class VenueApiControllerPaginationTest extends BaseApiControllerTest {
 
   private VenueRepository venues;
   private MockMvc mvc;
@@ -31,7 +30,7 @@ class VenueApiControllerPaginationTest {
   void setUp() {
     venues = Mockito.mock(VenueRepository.class);
     var controller = new VenueApiController(venues);
-    mvc = MockMvcBuilders.standaloneSetup(controller).build();
+    mvc = buildMvc(controller);
   }
 
   @Test

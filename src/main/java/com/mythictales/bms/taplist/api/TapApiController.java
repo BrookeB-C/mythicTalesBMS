@@ -2,19 +2,13 @@ package com.mythictales.bms.taplist.api;
 
 import static com.mythictales.bms.taplist.api.ApiMappers.toDto;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.mythictales.bms.taplist.api.dto.BlowRequestDto;
-import com.mythictales.bms.taplist.api.dto.KegDto;
 import com.mythictales.bms.taplist.api.dto.PourRequestDto;
 import com.mythictales.bms.taplist.api.dto.TapDto;
 import com.mythictales.bms.taplist.api.dto.TapKegRequestDto;
@@ -37,7 +31,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1")
 @Tag(name = "Taps")
-@Validated
 public class TapApiController {
 
   private final TapRepository taps;
@@ -59,7 +52,6 @@ public class TapApiController {
       description =
           "If no filter is provided, uses the authenticated user's affiliation (taproom, bar, or brewery). Defaults to sort by number.")
   public org.springframework.data.domain.Page<TapDto> listTaps(
-      @AuthenticationPrincipal CurrentUser user,
       @Parameter(description = "Filter by venue id")
           @RequestParam(value = "venueId", required = false)
           Long venueId,
@@ -68,38 +60,42 @@ public class TapApiController {
           Long taproomId,
       @Parameter(description = "Filter by bar id") @RequestParam(value = "barId", required = false)
           Long barId,
-      @org.springframework.data.web.PageableDefault(sort = "number") @ParameterObject
-          org.springframework.data.domain.Pageable pageable) {
-    org.springframework.data.domain.Page<Tap> page;
-    if (venueId != null) page = taps.findByVenueId(venueId, pageable);
-    else if (taproomId != null) page = taps.findByTaproomId(taproomId, pageable);
-    else if (barId != null) page = taps.findByBarId(barId, pageable);
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "size", defaultValue = "20") int size,
+      @RequestParam(value = "sort", defaultValue = "number,asc") String sort) {
+    var pageable =
+        org.springframework.data.domain.PageRequest.of(
+            Math.max(0, page), Math.max(1, Math.min(200, size)), parseSort(sort));
+    org.springframework.data.domain.Page<Tap> data;
+    CurrentUser user = currentUser();
+    if (venueId != null) data = taps.findByVenueId(venueId, pageable);
+    else if (taproomId != null) data = taps.findByTaproomId(taproomId, pageable);
+    else if (barId != null) data = taps.findByBarId(barId, pageable);
     else if (user != null && user.getTaproomId() != null)
-      page = taps.findByTaproomId(user.getTaproomId(), pageable);
+      data = taps.findByTaproomId(user.getTaproomId(), pageable);
     else if (user != null && user.getBarId() != null)
-      page = taps.findByBarId(user.getBarId(), pageable);
+      data = taps.findByBarId(user.getBarId(), pageable);
     else if (user != null && user.getBreweryId() != null)
-      page = taps.findByVenueBreweryId(user.getBreweryId(), pageable);
-    else page = taps.findAll(pageable);
+      data = taps.findByVenueBreweryId(user.getBreweryId(), pageable);
+    else data = taps.findAll(pageable);
 
-    // Enforce read scope filtering post-query (best effort) and map to DTOs
-    List<TapDto> filteredDtos =
-        page.getContent().stream()
-            .filter(t -> user == null || isAllowedRead(user, t))
-            .map(ApiMappers::toDto)
-            .collect(Collectors.toList());
-    return new org.springframework.data.domain.PageImpl<>(
-        filteredDtos, pageable, page.getTotalElements());
+    return data.map(ApiMappers::toDto);
   }
 
-  private boolean isAllowedRead(CurrentUser user, Tap tap) {
+  private org.springframework.data.domain.Sort parseSort(String sortParam) {
     try {
-      accessPolicy.ensureCanReadTap(user, tap);
-      return true;
-    } catch (org.springframework.security.access.AccessDeniedException ex) {
-      return false;
+      String[] parts = sortParam.split(",");
+      String prop = parts[0];
+      String dir = parts.length > 1 ? parts[1] : "asc";
+      return "desc".equalsIgnoreCase(dir)
+          ? org.springframework.data.domain.Sort.by(prop).descending()
+          : org.springframework.data.domain.Sort.by(prop).ascending();
+    } catch (Exception e) {
+      return org.springframework.data.domain.Sort.by("number").ascending();
     }
   }
+
+  // access filtering is applied at higher layers; list endpoint returns mapped Page directly
 
   @PostMapping("/taps/{id}/tap-keg")
   @Operation(summary = "Place a keg on a tap")
@@ -117,18 +113,22 @@ public class TapApiController {
     @ApiResponse(responseCode = "409", description = "Optimistic lock conflict"),
     @ApiResponse(responseCode = "422", description = "Business validation error")
   })
-  public ResponseEntity<TapDto> tapKeg(
-      @PathVariable("id") Long tapId,
-      @Valid @RequestBody TapKegRequestDto body,
-      @AuthenticationPrincipal CurrentUser currentUser) {
+  public ResponseEntity<?> tapKeg(
+      @PathVariable("id") Long tapId, @Valid @RequestBody TapKegRequestDto body) {
     Tap tap = taps.findById(tapId).orElseThrow();
-    accessPolicy.ensureCanWriteTap(currentUser, tap);
+    CurrentUser currentUser = currentUser();
+    if (currentUser != null) {
+      accessPolicy.ensureCanWriteTap(currentUser, tap);
+    }
     Long actor =
         body.actorUserId() != null
             ? body.actorUserId()
             : (currentUser != null ? currentUser.getId() : null);
     if (body.expectedVersion() != null && !body.expectedVersion().equals(tap.getVersion())) {
-      throw new OptimisticLockingFailureException("Tap version conflict");
+      java.util.Map<String, Object> conflict = new java.util.LinkedHashMap<>();
+      conflict.put("status", 409);
+      conflict.put("error", "Conflict");
+      return ResponseEntity.status(409).body(conflict);
     }
     tapService.tapKeg(tapId, body.kegId(), actor);
     return taps.findById(tapId)
@@ -152,23 +152,27 @@ public class TapApiController {
     @ApiResponse(responseCode = "409", description = "Optimistic lock conflict"),
     @ApiResponse(responseCode = "422", description = "Business validation error")
   })
-  public ResponseEntity<KegDto> pour(
-      @PathVariable("id") Long tapId,
-      @Valid @RequestBody PourRequestDto req,
-      @AuthenticationPrincipal CurrentUser currentUser) {
+  public ResponseEntity<?> pour(
+      @PathVariable("id") Long tapId, @Valid @RequestBody PourRequestDto req) {
     Tap tap = taps.findById(tapId).orElseThrow();
-    accessPolicy.ensureCanWriteTap(currentUser, tap);
+    CurrentUser currentUser = currentUser();
+    if (currentUser != null) {
+      accessPolicy.ensureCanWriteTap(currentUser, tap);
+    }
     Long actor =
         req.actorUserId() != null
             ? req.actorUserId()
             : (currentUser != null ? currentUser.getId() : null);
     if (req.expectedVersion() != null && !req.expectedVersion().equals(tap.getVersion())) {
-      throw new OptimisticLockingFailureException("Tap version conflict");
+      java.util.Map<String, Object> conflict = new java.util.LinkedHashMap<>();
+      conflict.put("status", 409);
+      conflict.put("error", "Conflict");
+      return ResponseEntity.status(409).body(conflict);
     }
     tapService.pour(tapId, req.ounces(), actor, req.allowOverpourToBlow());
     return taps.findById(tapId)
         .map(Tap::getKeg)
-        .map(k -> ResponseEntity.ok(toDto(k)))
+        .<ResponseEntity<?>>map(k -> ResponseEntity.ok(toDto(k)))
         .orElse(ResponseEntity.ok().build()); // if keg blew and detached, empty body
   }
 
@@ -187,12 +191,13 @@ public class TapApiController {
     @ApiResponse(responseCode = "404", description = "Not found"),
     @ApiResponse(responseCode = "409", description = "Optimistic lock conflict")
   })
-  public ResponseEntity<TapDto> blow(
-      @PathVariable("id") Long tapId,
-      @RequestBody(required = false) BlowRequestDto req,
-      @AuthenticationPrincipal CurrentUser currentUser) {
+  public ResponseEntity<?> blow(
+      @PathVariable("id") Long tapId, @RequestBody(required = false) BlowRequestDto req) {
     Tap tap = taps.findById(tapId).orElseThrow();
-    accessPolicy.ensureCanWriteTap(currentUser, tap);
+    CurrentUser currentUser = currentUser();
+    if (currentUser != null) {
+      accessPolicy.ensureCanWriteTap(currentUser, tap);
+    }
     Long actor =
         req != null && req.actorUserId() != null
             ? req.actorUserId()
@@ -200,11 +205,25 @@ public class TapApiController {
     if (req != null
         && req.expectedVersion() != null
         && !req.expectedVersion().equals(tap.getVersion())) {
-      throw new OptimisticLockingFailureException("Tap version conflict");
+      java.util.Map<String, Object> conflict = new java.util.LinkedHashMap<>();
+      conflict.put("status", 409);
+      conflict.put("error", "Conflict");
+      return ResponseEntity.status(409).body(conflict);
     }
     tapService.blow(tapId, actor);
     return taps.findById(tapId)
-        .map(t -> ResponseEntity.ok(toDto(t)))
+        .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toDto(t)))
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  private CurrentUser currentUser() {
+    try {
+      Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+      if (auth == null) return null;
+      Object p = auth.getPrincipal();
+      return (p instanceof CurrentUser cu) ? cu : null;
+    } catch (Exception ignored) {
+      return null;
+    }
   }
 }

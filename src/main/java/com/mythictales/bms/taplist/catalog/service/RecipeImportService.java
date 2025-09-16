@@ -1,23 +1,26 @@
 package com.mythictales.bms.taplist.catalog.service;
 
-import com.mythictales.bms.taplist.catalog.domain.Recipe;
-import com.mythictales.bms.taplist.catalog.domain.Recipe.SourceFormat;
-import com.mythictales.bms.taplist.catalog.repo.RecipeRepository;
-import com.mythictales.bms.taplist.domain.Brewery;
-import com.mythictales.bms.taplist.repo.BreweryRepository;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+
 import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import com.mythictales.bms.taplist.catalog.domain.Recipe;
+import com.mythictales.bms.taplist.catalog.domain.Recipe.SourceFormat;
+import com.mythictales.bms.taplist.catalog.repo.RecipeRepository;
+import com.mythictales.bms.taplist.domain.Brewery;
+import com.mythictales.bms.taplist.repo.BreweryRepository;
 
 @Service
 public class RecipeImportService {
@@ -35,7 +38,9 @@ public class RecipeImportService {
     try {
       DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
       f.setNamespaceAware(true);
-      Document doc = f.newDocumentBuilder().parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+      Document doc =
+          f.newDocumentBuilder()
+              .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
       Element root = doc.getDocumentElement();
       String rootName = root.getTagName();
       List<Long> ids = new ArrayList<>();
@@ -43,7 +48,9 @@ public class RecipeImportService {
         NodeList children = root.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
           Node n = children.item(i);
-          if (n.getNodeType() == Node.ELEMENT_NODE && (n.getNodeName().equalsIgnoreCase("RECIPE") || n.getNodeName().equalsIgnoreCase("Recipe"))) {
+          if (n.getNodeType() == Node.ELEMENT_NODE
+              && (n.getNodeName().equalsIgnoreCase("RECIPE")
+                  || n.getNodeName().equalsIgnoreCase("Recipe"))) {
             Long id = importSingleRecipeNode(brewery, (Element) n, xmlFragment((Element) n), force);
             ids.add(id);
           }
@@ -60,7 +67,8 @@ public class RecipeImportService {
     }
   }
 
-  private Long importSingleRecipeNode(Brewery brewery, Element el, String xmlFragment, boolean force) throws Exception {
+  private Long importSingleRecipeNode(
+      Brewery brewery, Element el, String xmlFragment, boolean force) throws Exception {
     String hash = sha256(normalize(xmlFragment));
     if (!force) {
       var dup = recipes.findFirstByBrewery_IdAndSourceHash(brewery.getId(), hash);
@@ -74,7 +82,8 @@ public class RecipeImportService {
     r.setStyleName(coalesce(text(el, "STYLE/NAME"), text(el, "Style/Name")));
     r.setType(coalesce(text(el, "TYPE"), text(el, "Type")));
     r.setBoilTimeMinutes(intOrNull(coalesce(text(el, "BOIL_TIME"), text(el, "BoilTime"))));
-    r.setBatchSizeLiters(doubleOrNull(coalesce(text(el, "BATCH_SIZE"), text(el, "BatchSizeLiters"))));
+    r.setBatchSizeLiters(
+        doubleOrNull(coalesce(text(el, "BATCH_SIZE"), text(el, "BatchSizeLiters"))));
     r.setIbu(doubleOrNull(coalesce(text(el, "IBU"), text(el, "IBUs"))));
     r.setAbv(doubleOrNull(coalesce(text(el, "ABV"), text(el, "ABV"))));
     r.setOg(doubleOrNull(coalesce(text(el, "OG"), text(el, "OG"))));
@@ -82,7 +91,8 @@ public class RecipeImportService {
     r.setEquipment(coalesce(text(el, "EQUIPMENT"), text(el, "Equipment/Name")));
     r.setNotes(coalesce(text(el, "NOTES"), text(el, "Notes")));
     r.setSourceFormat(SourceFormat.BEERXML); // default
-    if (el.getTagName().equalsIgnoreCase("Recipe") || el.getOwnerDocument().getDocumentElement().getTagName().equalsIgnoreCase("Recipes")) {
+    if (el.getTagName().equalsIgnoreCase("Recipe")
+        || el.getOwnerDocument().getDocumentElement().getTagName().equalsIgnoreCase("Recipes")) {
       r.setSourceFormat(SourceFormat.BEERSMITH);
     }
     r.setSourceHash(hash);
@@ -90,13 +100,24 @@ public class RecipeImportService {
     return r.getId();
   }
 
-  private static String coalesce(String a, String b) { return a != null ? a : b; }
+  private static String coalesce(String a, String b) {
+    return a != null ? a : b;
+  }
 
   private static Integer intOrNull(String s) {
-    try { return s == null ? null : Integer.valueOf(s.trim()); } catch (Exception e) { return null; }
+    try {
+      return s == null ? null : Integer.valueOf(s.trim());
+    } catch (Exception e) {
+      return null;
+    }
   }
+
   private static Double doubleOrNull(String s) {
-    try { return s == null ? null : Double.valueOf(s.trim()); } catch (Exception e) { return null; }
+    try {
+      return s == null ? null : Double.valueOf(s.trim());
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   private static String text(Element el, String path) {
@@ -138,8 +159,14 @@ public class RecipeImportService {
 
   public static class DuplicateRecipeException extends RuntimeException {
     private final Long existingId;
-    public DuplicateRecipeException(Long id) { super("duplicate"); this.existingId = id; }
-    public Long getExistingId() { return existingId; }
+
+    public DuplicateRecipeException(Long id) {
+      super("duplicate");
+      this.existingId = id;
+    }
+
+    public Long getExistingId() {
+      return existingId;
+    }
   }
 }
-
