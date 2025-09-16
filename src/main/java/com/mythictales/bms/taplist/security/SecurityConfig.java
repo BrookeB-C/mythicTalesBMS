@@ -1,6 +1,10 @@
 package com.mythictales.bms.taplist.security;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.context.annotation.*;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,14 +18,27 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import com.mythictales.bms.taplist.logging.CorrelationIdFilter;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
   private final UserDetailsService userDetailsService;
+  private final Environment env;
+  private final CorsConfigurationSource corsConfigurationSource;
+  private final CorrelationIdFilter correlationIdFilter;
 
-  public SecurityConfig(DbUserDetailsService uds) {
+  public SecurityConfig(
+      DbUserDetailsService uds,
+      Environment env,
+      CorsConfigurationSource corsConfigurationSource,
+      CorrelationIdFilter correlationIdFilter) {
     this.userDetailsService = uds;
+    this.env = env;
+    this.corsConfigurationSource = corsConfigurationSource;
+    this.correlationIdFilter = correlationIdFilter;
   }
 
   @Bean
@@ -68,17 +85,30 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    boolean h2Enabled = env.getProperty("spring.h2.console.enabled", Boolean.class, false);
+    boolean docsEnabled = env.getProperty("springdoc.enabled", Boolean.class, false);
+
+    List<String> permitAllPatterns = new ArrayList<>();
+    permitAllPatterns.addAll(List.of("/css/**", "/js/**", "/images/**", "/error/**", "/login"));
+    if (h2Enabled) {
+      permitAllPatterns.add("/h2-console/**");
+    }
+    if (docsEnabled) {
+      permitAllPatterns.addAll(List.of("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"));
+    }
+
     http.csrf(
             csrf ->
                 csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .ignoringRequestMatchers("/login", "/logout", "/h2-console/**"))
+                    .ignoringRequestMatchers(
+                        h2Enabled
+                            ? new String[] {"/login", "/logout", "/h2-console/**"}
+                            : new String[] {"/login", "/logout"}))
         .headers(h -> h.frameOptions(f -> f.sameOrigin()))
+        .cors(c -> c.configurationSource(corsConfigurationSource))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(
-                        "/css/**", "/js/**", "/images/**", "/h2-console/**", "/error/**")
-                    .permitAll()
-                    .requestMatchers("/login")
+                auth.requestMatchers(permitAllPatterns.toArray(new String[0]))
                     .permitAll()
                     .requestMatchers("/admin/site/**")
                     .hasRole("SITE_ADMIN")
@@ -103,7 +133,8 @@ public class SecurityConfig {
                 l.logoutUrl("/logout")
                     .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
                     .logoutSuccessUrl("/login?logout")
-                    .permitAll());
+                    .permitAll())
+        .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 }
