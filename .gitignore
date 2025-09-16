@@ -3,7 +3,10 @@ target/
 **/target/
 build/
 out/
-bin/
+# Ignore bin contents by default but allow scripts
+bin/*
+!bin/*.sh
+!bin/**/.keep
 
 # Logs
 *.log
