@@ -48,10 +48,35 @@ ENV_OUTPUT=$(awk -v section="$SECTION" '
   }
 ' "$CONFIG_FILE")
 
+# Fallback: if missing in config, derive sensible defaults so scripts still work
 if [[ -z "${ENV_OUTPUT}" ]]; then
-  echo "No env block found for $SECTION in $CONFIG_FILE" >&2
-  echo "Tip: add a section like:\n[genies.$ROLE]\nrole=\"$ROLE\"\nenv={ AGENT_ROLE=\"$ROLE\", SPRING_PROFILES_ACTIVE=\"dev\" }" >&2
-  exit 1
+  case "$ROLE" in
+    api)            ENV_OUTPUT=$'AGENT_ROLE=genie-api\nSPRING_PROFILES_ACTIVE=dev';;
+    platform)       ENV_OUTPUT=$'AGENT_ROLE=genie-platform-data\nSPRING_PROFILES_ACTIVE=dev';;
+    techlead)       ENV_OUTPUT=$'AGENT_ROLE=techlead\nSPRING_PROFILES_ACTIVE=dev';;
+    product)        ENV_OUTPUT=$'AGENT_ROLE=product-manager\nSPRING_PROFILES_ACTIVE=dev';;
+    production)     ENV_OUTPUT=$'AGENT_ROLE=genie-production\nSPRING_PROFILES_ACTIVE=dev';;
+    keginventory)   ENV_OUTPUT=$'AGENT_ROLE=genie-keginventory\nSPRING_PROFILES_ACTIVE=dev';;
+    catalog)        ENV_OUTPUT=$'AGENT_ROLE=genie-catalog\nSPRING_PROFILES_ACTIVE=dev';;
+    taproom)        ENV_OUTPUT=$'AGENT_ROLE=genie-taproom\nSPRING_PROFILES_ACTIVE=dev';;
+    sales)          ENV_OUTPUT=$'AGENT_ROLE=genie-sales\nSPRING_PROFILES_ACTIVE=dev';;
+    distribution)   ENV_OUTPUT=$'AGENT_ROLE=genie-distribution\nSPRING_PROFILES_ACTIVE=dev';;
+    prodinventory)  ENV_OUTPUT=$'AGENT_ROLE=genie-prodinventory\nSPRING_PROFILES_ACTIVE=dev';;
+    procurement)    ENV_OUTPUT=$'AGENT_ROLE=genie-procurement\nSPRING_PROFILES_ACTIVE=dev';;
+    maintenance)    ENV_OUTPUT=$'AGENT_ROLE=genie-maintenance\nSPRING_PROFILES_ACTIVE=dev';;
+    analytics)      ENV_OUTPUT=$'AGENT_ROLE=genie-analytics\nSPRING_PROFILES_ACTIVE=dev';;
+    billing)        ENV_OUTPUT=$'AGENT_ROLE=genie-billing\nSPRING_PROFILES_ACTIVE=dev';;
+    compliance)     ENV_OUTPUT=$'AGENT_ROLE=genie-compliance\nSPRING_PROFILES_ACTIVE=dev';;
+    iam)            ENV_OUTPUT=$'AGENT_ROLE=genie-iam\nSPRING_PROFILES_ACTIVE=dev';;
+    *) ;;
+  esac
+  if [[ -z "${ENV_OUTPUT}" ]]; then
+    echo "No env block found for $SECTION in $CONFIG_FILE" >&2
+    echo "Tip: add a section like:\n[genies.$ROLE]\nrole=\"$ROLE\"\nenv={ AGENT_ROLE=\"$ROLE\", SPRING_PROFILES_ACTIVE=\"dev\" }" >&2
+    exit 1
+  else
+    echo "Warn: $SECTION missing in $CONFIG_FILE; using default environment for role '$ROLE'" >&2
+  fi
 fi
 
 # Export env vars from parsed output KEY=VALUE per line
@@ -72,4 +97,3 @@ else
   echo "Environment set. Start your tool or run:"
   echo "  AGENT_ROLE=$AGENT_ROLE SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev} <your-command>"
 fi
-
