@@ -6,6 +6,73 @@
 
 A Spring Boot 3 application for managing brewery taplists and related admin workflows. Includes Thymeleaf pages for admins and a REST API scaffold documented with Swagger.
 
+## Docker Compose — Postgres (Staging & Prod)
+
+This repo includes a Compose file that runs two separate Postgres containers for staging and production.
+
+Quick start:
+
+1) Copy the example env and set strong passwords:
+
+```
+cp .env.example .env
+# edit .env to set passwords and ports as desired
+```
+
+2) Start staging or production database:
+
+```
+# Staging DB on localhost:5433
+make db-up-staging
+
+# Production DB on localhost:5432
+make db-up-prod
+```
+
+3) Stop containers when done:
+
+```
+make db-stop-staging
+make db-stop-prod
+```
+
+Connection strings (examples):
+
+```
+# Staging
+jdbc:postgresql://localhost:${STAGING_POSTGRES_PORT:-5433}/${STAGING_POSTGRES_DB}
+user: ${STAGING_POSTGRES_USER}
+password: ${STAGING_POSTGRES_PASSWORD}
+
+# Production
+jdbc:postgresql://localhost:${PRODUCTION_POSTGRES_PORT:-5432}/${PRODUCTION_POSTGRES_DB}
+user: ${PRODUCTION_POSTGRES_USER}
+password: ${PRODUCTION_POSTGRES_PASSWORD}
+```
+
+Compose file: `compose.yaml`. Variables are sourced from `.env`.
+
+## Spring Profiles — Staging & Production
+
+Profiles are pre-wired to use the Compose Postgres instances:
+
+- `staging`: connects to `localhost:5433` (DB `${STAGING_POSTGRES_DB}`)
+- `prod`: connects to `localhost:5432` (DB `${PRODUCTION_POSTGRES_DB}`)
+
+Run the app with a profile:
+
+```
+# Staging
+SPRING_PROFILES_ACTIVE=staging mvn spring-boot:run
+
+# Production
+SPRING_PROFILES_ACTIVE=prod mvn spring-boot:run
+```
+
+Notes:
+- Staging uses `ddl-auto=validate` and keeps Swagger UI enabled.
+- Production uses `ddl-auto=none` and disables Swagger UI and H2 console.
+
 ## Quick Start
 
 - Prerequisites: Java 17+, Maven 3.9+

@@ -7,7 +7,7 @@ IMAGE    := mythictales/$(APP_NAME):latest
 PORT     := 8080
 JAVA_OPTS ?=
 
-.PHONY: help run build test package clean format check-format docker-build docker-run docker-stop docker-rm spotbugs spotbugs-strict setup-commit-template
+.PHONY: help run build test package clean format check-format docker-build docker-run docker-stop docker-rm spotbugs spotbugs-strict setup-commit-template db-up-staging db-stop-staging db-up-prod db-stop-prod
 
 help:
 	@echo "Targets:"
@@ -24,6 +24,10 @@ help:
 	@echo "  docker-rm     - Remove stopped container"
 	@echo "  spotbugs      - Generate SpotBugs report (non-fatal)"
 	@echo "  spotbugs-strict - Fail on HIGH severity SpotBugs issues"
+	@echo "  db-up-staging - Start Postgres (staging) via compose"
+	@echo "  db-stop-staging - Stop Postgres (staging)"
+	@echo "  db-up-prod    - Start Postgres (prod) via compose"
+	@echo "  db-stop-prod  - Stop Postgres (prod)"
 	@echo "  setup-commit-template - Configure git commit.template to .gitmessage.txt"
 
 run:
@@ -64,6 +68,23 @@ spotbugs:
 
 spotbugs-strict:
 	mvn -B -ntp -Dspotbugs.failOnError=true -Dspotbugs.threshold=High spotbugs:check
+
+# Docker Compose helpers for Postgres
+db-up-staging:
+	@[ -f .env ] || (echo "Missing .env. Copy .env.example to .env and set passwords." && exit 1)
+	docker compose --profile staging up -d postgres-staging
+
+db-stop-staging:
+	docker compose stop postgres-staging || true
+	docker compose rm -f postgres-staging || true
+
+db-up-prod:
+	@[ -f .env ] || (echo "Missing .env. Copy .env.example to .env and set passwords." && exit 1)
+	docker compose --profile prod up -d postgres-prod
+
+db-stop-prod:
+	docker compose stop postgres-prod || true
+	docker compose rm -f postgres-prod || true
 
 setup-commit-template:
 	git config commit.template .gitmessage.txt
