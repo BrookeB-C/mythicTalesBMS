@@ -65,18 +65,25 @@ Mash Steps → `mash_step`
 - Style taxonomies are stored as strings initially; can be normalized later.
 - BeerSmith fields that have no BeerXML equivalent are stored when sensible (e.g., late additions).
 
-## Import API (planned)
+## Import API
 - `POST /api/v1/catalog/recipes/import` (multipart file)
-  - Accepts `format=BEERXML|BEERSMITH` (auto‑detect when possible)
-  - Persists `Recipe` + children; returns created id and summary
-- `GET /api/v1/catalog/recipes/{id}` → Recipe with children
+  - Enforces tenant scope: `breweryId` must match current user (SITE_ADMIN may bypass)
+  - Accepts BeerXML/BeerSmith XML; auto‑detects format
+  - Validates file not empty and <= 2MB; returns 400 Problem JSON on failure
+  - Dedup via `source_hash`; returns 409 Conflict Problem JSON if duplicate and `force=false`
+  - Persists `Recipe` + children; returns created ids: `{ "ids": [1,2,...] }`
+
+## Read API
+- `GET /api/v1/catalog/recipes?breweryId={id}&page=&size=&sort=`
+  - Paged recipes for a brewery; tenant‑scoped
+- `GET /api/v1/catalog/recipes/{id}`
+  - Returns a `Recipe` with child components; tenant‑scoped
 
 ## Idempotency & Dedup
 - Importers compute `source_hash` from normalized XML (trimmed, comments removed) to detect duplicates.
-- If a duplicate is detected, respond 200 with existing recipe id unless `?force=true`.
+- If a duplicate is detected and `force=false`, responds 409 Conflict (Problem JSON) with `details.existingId`.
 
 ## Future Enhancements
 - Profiles as first‑class: style/equipment/mash profiles normalized into separate tables
 - Calculator integration for IBU/ABV when missing or inconsistent
 - Versioning of recipes; user annotations
-

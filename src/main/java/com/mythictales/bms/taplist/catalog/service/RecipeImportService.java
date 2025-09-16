@@ -16,8 +16,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.mythictales.bms.taplist.catalog.domain.MashStep;
 import com.mythictales.bms.taplist.catalog.domain.Recipe;
 import com.mythictales.bms.taplist.catalog.domain.Recipe.SourceFormat;
+import com.mythictales.bms.taplist.catalog.domain.RecipeFermentable;
+import com.mythictales.bms.taplist.catalog.domain.RecipeHop;
+import com.mythictales.bms.taplist.catalog.domain.RecipeMisc;
+import com.mythictales.bms.taplist.catalog.domain.RecipeYeast;
 import com.mythictales.bms.taplist.catalog.repo.RecipeRepository;
 import com.mythictales.bms.taplist.domain.Brewery;
 import com.mythictales.bms.taplist.repo.BreweryRepository;
@@ -63,7 +68,8 @@ public class RecipeImportService {
       }
       return ids;
     } catch (Exception e) {
-      throw new RuntimeException("Failed to parse recipe XML", e);
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "Failed to parse recipe XML", java.util.Map.of("reason", "XML_PARSE_ERROR"));
     }
   }
 
@@ -96,6 +102,12 @@ public class RecipeImportService {
       r.setSourceFormat(SourceFormat.BEERSMITH);
     }
     r.setSourceHash(hash);
+    // parse children
+    RecipeChildParsers.parseFermentables(el, r);
+    RecipeChildParsers.parseHops(el, r);
+    RecipeChildParsers.parseYeasts(el, r);
+    RecipeChildParsers.parseMiscs(el, r);
+    RecipeChildParsers.parseMash(el, r);
     recipes.save(r);
     return r.getId();
   }
@@ -168,5 +180,165 @@ public class RecipeImportService {
     public Long getExistingId() {
       return existingId;
     }
+  }
+}
+
+// Helper parsing methods
+class XmlUtil {
+  static Element first(Element parent, String... names) {
+    for (String name : names) {
+      NodeList nl = parent.getElementsByTagName(name);
+      if (nl.getLength() > 0) return (Element) nl.item(0);
+    }
+    return null;
+  }
+
+  static List<Element> children(Element parent, String... names) {
+    List<Element> out = new ArrayList<>();
+    for (String name : names) {
+      NodeList nl = parent.getElementsByTagName(name);
+      for (int i = 0; i < nl.getLength(); i++) {
+        Node n = nl.item(i);
+        if (n.getNodeType() == Node.ELEMENT_NODE) out.add((Element) n);
+      }
+    }
+    return out;
+  }
+}
+
+// Extend service with child parsing
+class RecipeChildParsers {
+  static void parseFermentables(Element el, Recipe r) {
+    Element fer = XmlUtil.first(el, "FERMENTABLES", "Fermentables");
+    if (fer == null) return;
+    for (Element fe : XmlUtil.children(fer, "FERMENTABLE", "Fermentable")) {
+      RecipeFermentable f = new RecipeFermentable();
+      f.setRecipe(r);
+      f.setName(text(fe, "NAME", "Name"));
+      Double amtKg = dbl(text(fe, "AMOUNT", "AmountKg"));
+      f.setAmountKg(amtKg);
+      f.setYieldPercent(dbl(text(fe, "YIELD", "Yield")));
+      f.setColorLovibond(dbl(text(fe, "COLOR", "Color")));
+      String late = text(fe, "LATE_ADDITION", "LateAddition", "LateExtractAddition");
+      f.setLateAddition(bool(late));
+      f.setType(text(fe, "TYPE", "Type"));
+      if (f.getName() != null) {
+        r.getFermentables().add(f);
+      }
+    }
+  }
+
+  static void parseHops(Element el, Recipe r) {
+    Element hops = XmlUtil.first(el, "HOPS", "Hops");
+    if (hops == null) return;
+    for (Element he : XmlUtil.children(hops, "HOP", "Hop")) {
+      RecipeHop h = new RecipeHop();
+      h.setRecipe(r);
+      h.setName(text(he, "NAME", "Name"));
+      h.setAlphaAcid(dbl(text(he, "ALPHA", "Alpha")));
+      Double amtKg = dbl(text(he, "AMOUNT", "AmountKg"));
+      h.setAmountGrams(amtKg != null ? amtKg * 1000.0 : null);
+      h.setTimeMinutes(intOrNull(text(he, "TIME", "Time")));
+      h.setUseFor(text(he, "USE", "Use"));
+      h.setForm(text(he, "FORM", "Form"));
+      h.setIbuContribution(dbl(text(he, "IBU", "IBU")));
+      if (h.getName() != null) {
+        r.getHops().add(h);
+      }
+    }
+  }
+
+  static void parseYeasts(Element el, Recipe r) {
+    Element ys = XmlUtil.first(el, "YEASTS", "Yeasts");
+    if (ys == null) return;
+    for (Element ye : XmlUtil.children(ys, "YEAST", "Yeast")) {
+      RecipeYeast y = new RecipeYeast();
+      y.setRecipe(r);
+      y.setName(text(ye, "NAME", "Name"));
+      y.setLaboratory(text(ye, "LABORATORY", "Laboratory"));
+      y.setProductId(text(ye, "PRODUCT_ID", "ProductId", "ProductID"));
+      y.setType(text(ye, "TYPE", "Type"));
+      y.setForm(text(ye, "FORM", "Form"));
+      y.setAttenuation(dbl(text(ye, "ATTENUATION", "Attenuation")));
+      if (y.getName() != null || y.getLaboratory() != null || y.getProductId() != null) {
+        r.getYeasts().add(y);
+      }
+    }
+  }
+
+  static void parseMiscs(Element el, Recipe r) {
+    Element ms = XmlUtil.first(el, "MISCS", "Miscs");
+    if (ms == null) return;
+    for (Element me : XmlUtil.children(ms, "MISC", "Misc")) {
+      RecipeMisc m = new RecipeMisc();
+      m.setRecipe(r);
+      m.setName(text(me, "NAME", "Name"));
+      m.setType(text(me, "TYPE", "Type"));
+      m.setAmount(dbl(text(me, "AMOUNT", "Amount")));
+      String isWeight = text(me, "AMOUNT_IS_WEIGHT", "AmountIsWeight");
+      if (m.getAmount() != null) {
+        m.setAmountUnit(Boolean.TRUE.equals(bool(isWeight)) ? "g" : "l");
+      }
+      m.setUseFor(text(me, "USE", "Use"));
+      if (m.getName() != null) {
+        r.getMiscs().add(m);
+      }
+    }
+  }
+
+  static void parseMash(Element el, Recipe r) {
+    Element mash = XmlUtil.first(el, "MASH", "Mash");
+    if (mash == null) return;
+    Element steps = XmlUtil.first(mash, "MASH_STEPS", "Mash_Steps", "MashSteps");
+    if (steps == null) return;
+    for (Element se : XmlUtil.children(steps, "MASH_STEP", "Mash_Step", "MashStep")) {
+      MashStep ms = new MashStep();
+      ms.setRecipe(r);
+      ms.setName(text(se, "NAME", "Name"));
+      ms.setType(text(se, "TYPE", "Type"));
+      ms.setStepTempC(dbl(text(se, "STEP_TEMP", "StepTempC", "StepTemp")));
+      ms.setStepTimeMinutes(intOrNull(text(se, "STEP_TIME", "StepTime")));
+      ms.setInfuseAmountLiters(dbl(text(se, "INFUSE_AMOUNT", "InfuseAmount")));
+      if (ms.getName() != null || ms.getStepTempC() != null || ms.getStepTimeMinutes() != null) {
+        r.getMashSteps().add(ms);
+      }
+    }
+  }
+
+  static String text(Element el, String... names) {
+    for (String n : names) {
+      try {
+        NodeList nl = el.getElementsByTagName(n);
+        if (nl.getLength() > 0) return nl.item(0).getTextContent();
+      } catch (Exception ignore) {
+      }
+    }
+    return null;
+  }
+
+  static Integer intOrNull(String s) {
+    try {
+      return s == null || s.isBlank() ? null : Integer.valueOf(s.trim());
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  static Double dbl(String s) {
+    try {
+      return s == null || s.isBlank() ? null : Double.valueOf(s.trim());
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  static Boolean bool(String s) {
+    if (s == null) return null;
+    String v = s.trim().toLowerCase();
+    return switch (v) {
+      case "true", "1", "yes", "y" -> true;
+      case "false", "0", "no", "n" -> false;
+      default -> null;
+    };
   }
 }
