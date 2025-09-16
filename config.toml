@@ -104,6 +104,7 @@ format = "make format && make check-format"
 swagger = "open http://localhost:8080/swagger-ui.html"
 
 # =====================
+# Additional Genie Profiles (Coordination + Product)
 # Tech Lead Profile (coordination role)
 # =====================
 
@@ -112,45 +113,136 @@ role = "techlead"
 guide = "docs/agents/genie-techlead.md"
 tasks_file = "docs/techtasks/000-technical-backlog.md"
 enabled = true
-
-env = {
-  AGENT_ROLE = "techlead",
-  SPRING_PROFILES_ACTIVE = "dev"
-}
-
-# Coordinator scope: primarily docs, scripts, and cross-cutting configs
-paths_include = [
-  "docs/**",
-  "bin/**",
-  "config.toml",
-  "AGENTS.md",
-  ".github/**"
-]
-paths_exclude = []
-
-checks = { run_tests = false, spotbugs_strict = false, codeql = false, formatter_check = true }
-
-
-# =====================
-# Product Manager Profile
-# =====================
+env = { AGENT_ROLE = "techlead", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**", "bin/**", "AGENTS.md", "config.toml", ".github/**"]
+checks = { run_tests = false, formatter_check = true }
 
 [genies.product]
 role = "product-manager"
 guide = "docs/agents/genie-product-manager.md"
 tasks_file = "docs/techtasks/102-genie-product-manager-tasks.md"
 enabled = true
+env = { AGENT_ROLE = "product-manager", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**","requirements/**" "src/main/resources/**"]
+checks = { run_tests = false, formatter_check = true }
 
-env = {
-  AGENT_ROLE = "product-manager",
-  SPRING_PROFILES_ACTIVE = "dev"
-}
+# =====================
+# Domain Genies
+# =====================
 
-# PM scope: docs and resources (assets, samples)
-paths_include = [
-  "docs/**",
-  "src/main/resources/**"
-]
-paths_exclude = []
+[genies.production]
+role = "genie-production"
+guide = "docs/agents/genie-production.md"
+tasks_file = "docs/techtasks/110-genie-production-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-production", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**", "src/main/java/com/mythictales/bms/taplist/production/**"]
+checks = { run_tests = true, formatter_check = true }
 
-checks = { run_tests = false, spotbugs_strict = false, codeql = false, formatter_check = true }
+[genies.keginventory]
+role = "genie-keginventory"
+guide = "docs/agents/genie-keginventory.md"
+tasks_file = "docs/techtasks/111-genie-keginventory-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-keginventory", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**", "src/main/java/com/mythictales/bms/taplist/keginventory/**"]
+checks = { run_tests = true, formatter_check = true }
+
+[genies.catalog]
+role = "genie-catalog"
+guide = "docs/agents/genie-catalog.md"
+tasks_file = "docs/techtasks/112-genie-catalog-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-catalog", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**", "src/main/java/com/mythictales/bms/taplist/catalog/**"]
+checks = { run_tests = true, formatter_check = true }
+
+[genies.taproom]
+role = "genie-taproom"
+guide = "docs/agents/genie-taproom.md"
+tasks_file = "docs/techtasks/113-genie-taproom-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-taproom", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**", "src/main/java/com/mythictales/bms/taplist/**"]
+checks = { run_tests = true, formatter_check = true }
+
+[genies.sales]
+role = "genie-sales"
+guide = "docs/agents/genie-sales.md"
+tasks_file = "docs/techtasks/114-genie-sales-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-sales", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.distribution]
+role = "genie-distribution"
+guide = "docs/agents/genie-distribution.md"
+tasks_file = "docs/techtasks/115-genie-distribution-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-distribution", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.prodinventory]
+role = "genie-prodinventory"
+guide = "docs/agents/genie-prodinventory.md"
+tasks_file = "docs/techtasks/116-genie-prodinventory-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-prodinventory", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.procurement]
+role = "genie-procurement"
+guide = "docs/agents/genie-procurement.md"
+tasks_file = "docs/techtasks/117-genie-procurement-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-procurement", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.maintenance]
+role = "genie-maintenance"
+guide = "docs/agents/genie-maintenance.md"
+tasks_file = "docs/techtasks/118-genie-maintenance-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-maintenance", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.analytics]
+role = "genie-analytics"
+guide = "docs/agents/genie-analytics.md"
+tasks_file = "docs/techtasks/119-genie-analytics-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-analytics", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.billing]
+role = "genie-billing"
+guide = "docs/agents/genie-billing.md"
+tasks_file = "docs/techtasks/120-genie-billing-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-billing", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.compliance]
+role = "genie-compliance"
+guide = "docs/agents/genie-compliance.md"
+tasks_file = "docs/techtasks/121-genie-compliance-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-compliance", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**"]
+checks = { run_tests = false, formatter_check = true }
+
+[genies.iam]
+role = "genie-iam"
+guide = "docs/agents/genie-iam.md"
+tasks_file = "docs/techtasks/122-genie-iam-tasks.md"
+enabled = true
+env = { AGENT_ROLE = "genie-iam", SPRING_PROFILES_ACTIVE = "dev" }
+paths_include = ["docs/**", "src/main/java/com/mythictales/bms/taplist/security/**"]
+checks = { run_tests = true, formatter_check = true }
