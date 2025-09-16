@@ -88,7 +88,7 @@
     <tbody>
       <tr th:each="k : ${kegs}">
         <td th:text="${k.serialNumber}">SER-001</td>
-        <td th:text="${k.beer.name}">Beer</td>
+        <td th:text="${k.beer != null ? k.beer.name : '-'}">Beer</td>
         <td th:text="${k.size}">HALF_BARREL</td>
         <td>
           <span class="badge" th:text="${k.status}"
@@ -181,7 +181,7 @@
       <tbody>
         <tr th:each="k : ${assignedKegs}">
           <td th:text="${k.serialNumber}">SER-020</td>
-          <td th:text="${k.beer.name}">Beer</td>
+          <td th:text="${k.beer != null ? k.beer.name : '-'}">Beer</td>
           <td th:text="${k.size}">SIXTEL</td>
           <td>
             <span class="badge" th:text="${k.status}"
@@ -215,7 +215,7 @@
       <tbody>
         <tr th:each="k : ${returnedKegs}">
           <td th:text="${k.serialNumber}">SER-100</td>
-          <td th:text="${k.beer.name}">Beer</td>
+          <td th:text="${k.beer != null ? k.beer.name : '-'}">Beer</td>
           <td th:text="${k.size}">SIXTEL</td>
           <td th:text="${k.status}">RETURNED</td>
           <td>
