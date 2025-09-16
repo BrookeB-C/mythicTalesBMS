@@ -85,5 +85,44 @@ Done criteria
   - `GET /api/v1/catalog/styles` and `GET /api/v1/catalog/styles/{id}` for lookup
   - `POST /api/v1/catalog/styles/import` (CSV, SITE_ADMIN)
   - CSV columns: `code,name,category,subcategory,year,og_min,og_max,fg_min,fg_max,ibu_min,ibu_max,abv_min,abv_max,srm_min,srm_max,notes`
-  - Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
+- Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
   - Server-side filters: `year` and `q` (matches `code` or `name`), plus `page/size/sort`
+
+## Production — Run Planning MVP
+- Entities & lists
+  - Add `GET /api/v1/production/facilities`, `/brew-systems`, `/fermentors` with capacity + unit fields.
+  - Add `GET /api/v1/production/fermentors/{id}/schedule` (calendar view).
+- Plan runs
+  - `POST /api/v1/production/runs` with `brewSystemId`, optional `fermentorId`, `recipeId` or on‑run recipe, `startAt`, scaled target volume.
+  - Validate brew system availability; warn if fermentor not available for expected finish; allow optional assignment.
+  - `PATCH /api/v1/production/runs/{id}` to edit recipe on the run; optional save to catalog as NEW or REPLACE.
+- Shopping list
+  - `GET /api/v1/production/runs/{id}/shopping-list` computed from scaled recipe against Production Inventory.
+- OpenAPI + tests
+  - Document fields, warning semantics, and scaling; add MockMvc tests for happy path and warnings.
+- Acceptance criteria
+  - Endpoints return 200/201 on valid requests; 400 on validation errors; 403 on scope violations; 409 on optimistic conflicts; 422 on business rule violations (e.g., unavailable system).
+  - Brew system availability validated; optional fermentor assignment warning surfaced via Problem JSON `details`.
+  - Shopping list endpoint returns computed materials with quantities and units derived from scaled recipe.
+  - OpenAPI docs include schemas and examples; tests cover happy/warning/error paths.
+
+## Partners — External Recipients
+- Directory endpoints
+  - `GET/POST /api/v1/partners/external-venues`, `GET/POST /api/v1/partners/distributors` (tenant‑scoped).
+- Keg distribution (external)
+  - Extend `POST /api/v1/kegs/{id}/distribute` to accept either `venueId` or an external partner id; validate mutual exclusivity.
+  - Kegs sent to external partners remain `DISTRIBUTED` until `POST /return`.
+- OpenAPI + tests
+  - Add schemas for partner entities; tests for distribute→return flows (internal vs external).
+- Acceptance criteria
+  - Partners directory endpoints support create/list with tenant scoping and validation; duplicates rejected with 409.
+  - Distribute accepts exactly one destination (internal venue OR external partner) and rejects ambiguous requests with 400.
+  - Kegs distributed externally remain DISTRIBUTED until returned; return flow updates status correctly.
+  - OpenAPI examples reflect internal vs external flows; MockMvc tests cover both.
+
+## IAM — Roles Alignment
+- Define additional roles aligned to requirements: `BREWER`, `HEAD_BREWER`, `TAPROOM_MANAGER` (map to contexts and permissions).
+- Update access policy checks for new roles where applicable (production planning endpoints).
+- Acceptance criteria
+  - New roles recognized by access policy; endpoints gated appropriately (e.g., production planning requires BREWER/HEAD_BREWER).
+  - Swagger documents authorization requirements; unauthorized returns 403 with Problem JSON.
