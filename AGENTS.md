@@ -77,9 +77,11 @@ This repository is configured for AI agents (“genies”) collaborating on the 
 - Set the environment variable `AGENT_ROLE` for each running agent instance:
   - `AGENT_ROLE=genie-api` for the API & Security Genie
   - `AGENT_ROLE=genie-platform-data` for the Platform, Data & Observability Genie
+  - `AGENT_ROLE=techlead` for the Tech Lead coordinator role (planning/docs/workflow)
+  - `AGENT_ROLE=product-manager` for the Product Manager (docs, resources, release notes)
 - Behavior:
   - Agents should read `AGENT_ROLE` at start and strictly follow the corresponding guide in `docs/agents/`.
   - If `AGENT_ROLE` is not set, default to read-only exploration and ask for clarification.
 - Optional file-based selection for tools without env support:
-  - Create a file `docs/agents/role.txt` with either `genie-api` or `genie-platform-data`.
+  - Create a file `docs/agents/role.txt` with `genie-api`, `genie-platform-data`, `techlead`, or `product-manager`.
   - Agents should prefer `AGENT_ROLE` when both are present.

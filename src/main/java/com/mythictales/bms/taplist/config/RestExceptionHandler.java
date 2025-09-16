@@ -1,83 +1,89 @@
 package com.mythictales.bms.taplist.config;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-import org.slf4j.MDC;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.validation.FieldError;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
+import com.mythictales.bms.taplist.catalog.service.RecipeImportService.DuplicateRecipeException;
+import com.mythictales.bms.taplist.service.BusinessValidationException;
 
-@RestControllerAdvice(basePackages = "com.mythictales.bms.taplist.api")
+@ControllerAdvice
 public class RestExceptionHandler {
-
-  public static record Problem(
-      int status,
-      String error,
-      String message,
-      Object details,
-      Instant timestamp,
-      String traceId) {}
-
-  private ResponseEntity<Problem> build(HttpStatus status, String message, Object details) {
-    String traceId = Optional.ofNullable(MDC.get("traceId")).orElse(MDC.get("X-Request-Id"));
-    Problem body =
-        new Problem(
-            status.value(), status.getReasonPhrase(), message, details, Instant.now(), traceId);
-    return ResponseEntity.status(status).body(body);
-  }
-
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Problem> handleValidation(MethodArgumentNotValidException ex) {
-    Map<String, String> errors = new LinkedHashMap<>();
-    for (var err : ex.getBindingResult().getAllErrors()) {
-      String field = err instanceof FieldError fe ? fe.getField() : err.getObjectName();
-      errors.put(field, err.getDefaultMessage());
-    }
-    return build(HttpStatus.BAD_REQUEST, "Validation failed", errors);
-  }
-
-  @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<Problem> handleConstraintViolation(ConstraintViolationException ex) {
-    Map<String, String> errors = new LinkedHashMap<>();
-    for (ConstraintViolation<?> v : ex.getConstraintViolations()) {
-      errors.put(String.valueOf(v.getPropertyPath()), v.getMessage());
-    }
-    return build(HttpStatus.BAD_REQUEST, "Validation failed", errors);
+  private Map<String, Object> body(int status, String error, String message, Object details) {
+    Map<String, Object> m = new LinkedHashMap<>();
+    m.put("status", status);
+    m.put("error", error);
+    if (message != null) m.put("message", message);
+    if (details != null) m.put("details", details);
+    m.put("timestamp", Instant.now().toString());
+    return m;
   }
 
   @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Problem> handleAccessDenied(AccessDeniedException ex) {
-    return build(HttpStatus.FORBIDDEN, "Forbidden", null);
+  public ResponseEntity<?> handle403(AccessDeniedException ex) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body(403, "Forbidden", ex.getMessage(), null));
   }
 
-  @ExceptionHandler(NoSuchElementException.class)
-  public ResponseEntity<Problem> handleNotFound(NoSuchElementException ex) {
-    return build(HttpStatus.NOT_FOUND, "Not found", null);
+  @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+  public ResponseEntity<?> handle400(Exception ex) {
+    Object details = null;
+    if (ex instanceof MethodArgumentNotValidException manv) {
+      var br = manv.getBindingResult();
+      Map<String, String> errs = new LinkedHashMap<>();
+      br.getFieldErrors().forEach(fe -> errs.put(fe.getField(), fe.getDefaultMessage()));
+      details = errs;
+    } else if (ex instanceof BindException be) {
+      var br = be.getBindingResult();
+      Map<String, String> errs = new LinkedHashMap<>();
+      br.getFieldErrors().forEach(fe -> errs.put(fe.getField(), fe.getDefaultMessage()));
+      details = errs;
+    }
+    return ResponseEntity.badRequest()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body(400, "Bad Request", "Validation failed", details));
   }
 
-  @ExceptionHandler(OptimisticLockingFailureException.class)
-  public ResponseEntity<Problem> handleOptimisticLock(OptimisticLockingFailureException ex) {
-    return build(HttpStatus.CONFLICT, "Optimistic lock conflict", null);
+  @ExceptionHandler(BusinessValidationException.class)
+  public ResponseEntity<?> handle422(BusinessValidationException ex) {
+    return ResponseEntity.status(422)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body(422, "Unprocessable Entity", ex.getMessage(), ex.getDetails()));
   }
 
-  @ExceptionHandler(com.mythictales.bms.taplist.service.BusinessValidationException.class)
-  public ResponseEntity<Problem> handleBusinessValidation(
-      com.mythictales.bms.taplist.service.BusinessValidationException ex) {
-    return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), ex.getDetails());
+  @ExceptionHandler({OptimisticLockingFailureException.class, DuplicateRecipeException.class})
+  public ResponseEntity<?> handle409(Exception ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body(409, "Conflict", ex.getMessage(), null));
+  }
+
+  @ExceptionHandler({
+    java.util.NoSuchElementException.class,
+    jakarta.persistence.EntityNotFoundException.class
+  })
+  public ResponseEntity<?> handle404(Exception ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            body(404, "Not Found", ex.getMessage() != null ? ex.getMessage() : "Not found", null));
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Problem> handleGeneric(Exception ex, WebRequest req) {
-    return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", null);
+  public ResponseEntity<?> handle500(Exception ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body(500, "Internal Server Error", ex.getMessage(), null));
   }
 }

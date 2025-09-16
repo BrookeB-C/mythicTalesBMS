@@ -103,3 +103,54 @@ spotbugs = "make spotbugs-strict"
 format = "make format && make check-format"
 swagger = "open http://localhost:8080/swagger-ui.html"
 
+# =====================
+# Tech Lead Profile (coordination role)
+# =====================
+
+[genies.techlead]
+role = "techlead"
+guide = "docs/agents/genie-techlead.md"
+tasks_file = "docs/techtasks/000-technical-backlog.md"
+enabled = true
+
+env = {
+  AGENT_ROLE = "techlead",
+  SPRING_PROFILES_ACTIVE = "dev"
+}
+
+# Coordinator scope: primarily docs, scripts, and cross-cutting configs
+paths_include = [
+  "docs/**",
+  "bin/**",
+  "config.toml",
+  "AGENTS.md",
+  ".github/**"
+]
+paths_exclude = []
+
+checks = { run_tests = false, spotbugs_strict = false, codeql = false, formatter_check = true }
+
+
+# =====================
+# Product Manager Profile
+# =====================
+
+[genies.product]
+role = "product-manager"
+guide = "docs/agents/genie-product-manager.md"
+tasks_file = "docs/techtasks/102-genie-product-manager-tasks.md"
+enabled = true
+
+env = {
+  AGENT_ROLE = "product-manager",
+  SPRING_PROFILES_ACTIVE = "dev"
+}
+
+# PM scope: docs and resources (assets, samples)
+paths_include = [
+  "docs/**",
+  "src/main/resources/**"
+]
+paths_exclude = []
+
+checks = { run_tests = false, spotbugs_strict = false, codeql = false, formatter_check = true }

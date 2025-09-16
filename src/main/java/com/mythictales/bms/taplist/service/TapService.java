@@ -3,6 +3,7 @@ package com.mythictales.bms.taplist.service;
 import java.time.Instant;
 import java.util.Map;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,18 +17,21 @@ public class TapService {
   private final KegPlacementRepository placements;
   private final KegEventRepository events;
   private final UserAccountRepository users;
+  private final ApplicationEventPublisher eventsBus;
 
   public TapService(
       TapRepository t,
       KegRepository k,
       KegPlacementRepository p,
       KegEventRepository e,
-      UserAccountRepository users) {
+      UserAccountRepository users,
+      ApplicationEventPublisher eventsBus) {
     this.taps = t;
     this.kegs = k;
     this.placements = p;
     this.events = e;
     this.users = users;
+    this.eventsBus = eventsBus;
   }
 
   // Overloads without actor for system/data initialization
@@ -72,6 +76,11 @@ public class TapService {
       users.findById(actorUserId).ifPresent(evt::setActor);
     }
     events.save(evt);
+    if (tap.getVenue() != null) {
+      eventsBus.publishEvent(
+          new com.mythictales.bms.taplist.events.TaproomEvents.KegTapped(
+              tap.getId(), keg.getId(), tap.getVenue().getId(), actorUserId));
+    }
   }
 
   @Transactional
@@ -96,6 +105,14 @@ public class TapService {
             });
     tap.setKeg(null);
     taps.save(tap);
+    if (tap.getVenue() != null && keg != null) {
+      eventsBus.publishEvent(
+          new com.mythictales.bms.taplist.events.TaproomEvents.KegBlown(
+              tap.getId(), keg.getId(), tap.getVenue().getId(), actorUserId));
+      eventsBus.publishEvent(
+          new com.mythictales.bms.taplist.events.TaproomEvents.KegUntapped(
+              tap.getId(), keg.getId(), tap.getVenue().getId(), actorUserId));
+    }
   }
 
   @Transactional
@@ -129,6 +146,11 @@ public class TapService {
               }
               events.save(evt);
             });
+    if (tap.getVenue() != null && keg != null) {
+      eventsBus.publishEvent(
+          new com.mythictales.bms.taplist.events.TaproomEvents.BeerPoured(
+              tap.getId(), keg.getId(), tap.getVenue().getId(), ounces, actorUserId));
+    }
     if (keg.getRemainingOunces() <= 0) {
       keg.setStatus(KegStatus.BLOWN);
       kegs.save(keg);
@@ -146,6 +168,14 @@ public class TapService {
               });
       tap.setKeg(null);
       taps.save(tap);
+      if (tap.getVenue() != null) {
+        eventsBus.publishEvent(
+            new com.mythictales.bms.taplist.events.TaproomEvents.KegBlown(
+                tap.getId(), keg.getId(), tap.getVenue().getId(), actorUserId));
+        eventsBus.publishEvent(
+            new com.mythictales.bms.taplist.events.TaproomEvents.KegUntapped(
+                tap.getId(), keg.getId(), tap.getVenue().getId(), actorUserId));
+      }
     }
   }
 }

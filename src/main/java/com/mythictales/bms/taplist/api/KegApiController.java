@@ -4,10 +4,8 @@ import static com.mythictales.bms.taplist.api.ApiMappers.toDto;
 
 import java.util.Objects;
 
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -48,17 +46,36 @@ public class KegApiController {
       @RequestParam(value = "breweryId", required = false) Long breweryId,
       @RequestParam(value = "status", required = false) KegStatus status,
       @RequestParam(value = "assignedVenueId", required = false) Long assignedVenueId,
-      @ParameterObject @PageableDefault(sort = "serialNumber") Pageable pageable) {
-    Page<Keg> page;
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "size", defaultValue = "20") int size,
+      @RequestParam(value = "sort", defaultValue = "serialNumber,asc") String sort) {
+    Pageable pageable =
+        org.springframework.data.domain.PageRequest.of(
+            Math.max(0, page), Math.max(1, Math.min(200, size)), parseSort(sort));
+    Page<Keg> pageData;
     if (assignedVenueId != null && status != null)
-      page = kegs.findByAssignedVenueIdAndStatus(assignedVenueId, status, pageable);
-    else if (assignedVenueId != null) page = kegs.findByAssignedVenueId(assignedVenueId, pageable);
+      pageData = kegs.findByAssignedVenueIdAndStatus(assignedVenueId, status, pageable);
+    else if (assignedVenueId != null)
+      pageData = kegs.findByAssignedVenueId(assignedVenueId, pageable);
     else if (breweryId != null && status != null)
-      page = kegs.findByBreweryIdAndStatus(breweryId, status, pageable);
-    else if (breweryId != null) page = kegs.findByBreweryId(breweryId, pageable);
-    else if (status != null) page = kegs.findByStatus(status, pageable);
-    else page = kegs.findAll(pageable);
-    return page.map(ApiMappers::toDto);
+      pageData = kegs.findByBreweryIdAndStatus(breweryId, status, pageable);
+    else if (breweryId != null) pageData = kegs.findByBreweryId(breweryId, pageable);
+    else if (status != null) pageData = kegs.findByStatus(status, pageable);
+    else pageData = kegs.findAll(pageable);
+    return pageData.map(ApiMappers::toDto);
+  }
+
+  private org.springframework.data.domain.Sort parseSort(String sortParam) {
+    try {
+      String[] parts = sortParam.split(",");
+      String prop = parts[0];
+      String dir = parts.length > 1 ? parts[1] : "asc";
+      return "desc".equalsIgnoreCase(dir)
+          ? org.springframework.data.domain.Sort.by(prop).descending()
+          : org.springframework.data.domain.Sort.by(prop).ascending();
+    } catch (Exception e) {
+      return org.springframework.data.domain.Sort.by("serialNumber").ascending();
+    }
   }
 
   @GetMapping("/{id}")

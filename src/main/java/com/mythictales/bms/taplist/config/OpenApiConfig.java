@@ -16,6 +16,9 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "springdoc.enabled",
+    havingValue = "true")
 @SecurityScheme(
     name = "bearerAuth",
     type = SecuritySchemeType.HTTP,

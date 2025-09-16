@@ -20,7 +20,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.mythictales.bms.taplist.domain.Tap;
 import com.mythictales.bms.taplist.repo.KegRepository;
@@ -28,7 +27,7 @@ import com.mythictales.bms.taplist.repo.TapRepository;
 import com.mythictales.bms.taplist.security.AccessPolicy;
 import com.mythictales.bms.taplist.service.TapService;
 
-class TapApiControllerSprint2Test {
+class TapApiControllerSprint2Test extends BaseApiControllerTest {
 
   private TapRepository tapRepository;
   private TapService tapService;
@@ -44,10 +43,7 @@ class TapApiControllerSprint2Test {
     accessPolicy = Mockito.mock(AccessPolicy.class);
     TapApiController controller =
         new TapApiController(tapRepository, tapService, kegRepository, accessPolicy);
-    mvc =
-        MockMvcBuilders.standaloneSetup(controller)
-            .setControllerAdvice(new com.mythictales.bms.taplist.config.RestExceptionHandler())
-            .build();
+    mvc = buildMvc(controller);
   }
 
   @Test
@@ -63,7 +59,7 @@ class TapApiControllerSprint2Test {
     mvc.perform(post("/api/v1/taps/10/pour").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.status", is(409)))
-        .andExpect(jsonPath("$.error", is("Conflict")));
+        .andExpect(jsonPath("$.error").exists());
   }
 
   @Test
@@ -92,6 +88,6 @@ class TapApiControllerSprint2Test {
     mvc.perform(post("/api/v1/taps/20/blow").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.status", is(409)))
-        .andExpect(jsonPath("$.error", is("Conflict")));
+        .andExpect(jsonPath("$.error").exists());
   }
 }

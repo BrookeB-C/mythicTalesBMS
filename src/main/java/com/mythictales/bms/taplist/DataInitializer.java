@@ -10,6 +10,7 @@ import com.mythictales.bms.taplist.repo.*;
 import com.mythictales.bms.taplist.service.TapService;
 
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class DataInitializer {
   @Bean
   CommandLineRunner initData(
