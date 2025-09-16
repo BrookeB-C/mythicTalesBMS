@@ -91,13 +91,19 @@
         <td th:text="${k.beer.name}">Beer</td>
         <td th:text="${k.size}">HALF_BARREL</td>
         <td>
-          <span class="badge" th:text="${k.status}"
-                th:classappend="${(k.status == T(com.mythictales.bms.taplist.domain.KegStatus).FILLED) ? ' green' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))}">
-          </span>
+          <th:block th:switch="${k.status}">
+            <span class="badge green" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).FILLED}"
+                  th:text="${k.status}"></span>
+            <span class="badge blue" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED}"
+                  th:text="${k.status}"></span>
+            <span class="badge purple" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED}"
+                  th:text="${k.status}"></span>
+            <span class="badge orange" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED}"
+                  th:text="${k.status}"></span>
+            <span class="badge red" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN}"
+                  th:text="${k.status}"></span>
+            <span class="badge gray" th:case="*" th:text="${k.status}"></span>
+          </th:block>
         </td>
         <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>
         <td>
@@ -184,13 +190,19 @@
           <td th:text="${k.beer.name}">Beer</td>
           <td th:text="${k.size}">SIXTEL</td>
           <td>
-            <span class="badge" th:text="${k.status}"
-                  th:classappend="${(k.status == T(com.mythictales.bms.taplist.domain.KegStatus).FILLED) ? ' green' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))}">
-            </span>
+            <th:block th:switch="${k.status}">
+              <span class="badge green" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).FILLED}"
+                    th:text="${k.status}"></span>
+              <span class="badge blue" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED}"
+                    th:text="${k.status}"></span>
+              <span class="badge purple" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED}"
+                    th:text="${k.status}"></span>
+              <span class="badge orange" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED}"
+                    th:text="${k.status}"></span>
+              <span class="badge red" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN}"
+                    th:text="${k.status}"></span>
+              <span class="badge gray" th:case="*" th:text="${k.status}"></span>
+            </th:block>
           </td>
           <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>
           <td>
