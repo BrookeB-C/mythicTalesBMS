@@ -56,9 +56,15 @@ public class DataInitializer {
       tap3.setBar(bar);
       tap3.setVenue(vBar);
       taps.save(tap3);
-      Beer ipa = beers.save(new Beer("Dragon's Breath IPA", "IPA", 6.8));
-      Beer stout = beers.save(new Beer("Shadow Stout", "Stout", 8.0));
-      Beer lager = beers.save(new Beer("Silver Lager", "Lager", 5.0));
+      Beer ipa = new Beer("Dragon's Breath IPA", "IPA", 6.8);
+      ipa.setBrewery(br);
+      beers.save(ipa);
+      Beer stout = new Beer("Shadow Stout", "Stout", 8.0);
+      stout.setBrewery(br);
+      beers.save(stout);
+      Beer lager = new Beer("Silver Lager", "Lager", 5.0);
+      lager.setBrewery(br);
+      beers.save(lager);
       java.util.Map<Long, Integer> serialSeq = new java.util.HashMap<>();
       java.util.function.BiFunction<Brewery, String, String> nextSerial =
           (brewery, prefix) -> {
@@ -114,6 +120,7 @@ public class DataInitializer {
               Beer brr =
                   new Beer(
                       n, i % 2 == 0 ? "IPA" : (i % 3 == 0 ? "Lager" : "Stout"), abvFor.apply(i));
+              brr.setBrewery(brewery);
               out.add(beers.save(brr));
             }
             return out;
