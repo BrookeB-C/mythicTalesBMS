@@ -2,6 +2,14 @@
 
 This is a prioritized, actionable backlog from a Tech Lead perspective. Items are grouped by priority and area with suggested acceptance criteria.
 
+## Dispatch Assignments (Tracked)
+- TLD-012 — Manual QA regression dry run
+  - Owner: techlead (coordinate PM & QA)
+  - Actions: Run `docs/testing/manual-qa.md`, capture results and triage follow-ups into appropriate genie task lists.
+- TLD-013 — Review branch hygiene & feature workflow
+  - Owner: techlead
+  - Actions: Audit `docs/tech/reviewbranches/`, close/merge or archive stale entries; ensure each active branch links tasks/docs.
+
 ## Priority 0 — Correctness, Security, Stability
 
 - Enforce authorization scope in REST API
@@ -103,4 +111,3 @@ This is a prioritized, actionable backlog from a Tech Lead perspective. Items ar
 ---
 
 Last updated: YYYY-MM-DD
-

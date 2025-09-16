@@ -2,6 +2,15 @@
 
 Scope: `/api/v1/**` controllers, DTOs/mappers, security enforcement, validation, error handling, OpenAPI docs.
 
+Dispatch assignments (from 130-techlead-dispatch.md)
+- TLD-001 Enforce authorization scope on REST endpoints
+- TLD-002 REST exception handling with Problem JSON
+- TLD-003 Validate API input payloads
+- TLD-004 Pour invariants and 422 handling
+- TLD-005 Optimistic concurrency on taps/kegs endpoints
+- TLD-010 Pageable collection endpoints
+- TLD-011 Complete OpenAPI annotations
+
 ## Sprint 1 — Correctness & Safety
 - Add `RestExceptionHandler` producing Problem JSON
   - Map: 400 (validation), 403 (scope), 404 (not found), 409 (optimistic lock), 422 (business validation)

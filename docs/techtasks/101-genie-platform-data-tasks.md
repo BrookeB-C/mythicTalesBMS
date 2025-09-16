@@ -74,6 +74,12 @@ Done criteria
 - Health and metrics endpoints available; logs include correlation ids
 - CI green; Docker image builds in CI; manual smoke test passes with Postgres
 
+Dispatch assignments (from 130-techlead-dispatch.md)
+- TLD-006 Lock down H2 console & Swagger UI in prod
+- TLD-007 Normalize Tap ↔ Venue assignments
+- TLD-008 Introduce Flyway baseline + seed scripts
+- TLD-009 Observability baseline (Actuator + metrics)
+
 ## Sprint 5 — Observability Maturity (Tracing, Logs, Metrics)
 - Tracing (OpenTelemetry)
   - Add micrometer-tracing-bridge-otel; propagate `traceId`/`spanId` via W3C and/or B3.
