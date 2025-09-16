@@ -73,3 +73,69 @@ Done criteria
 - Database created and migrated via Flyway
 - Health and metrics endpoints available; logs include correlation ids
 - CI green; Docker image builds in CI; manual smoke test passes with Postgres
+
+## Sprint 5 — Observability Maturity (Tracing, Logs, Metrics)
+- Tracing (OpenTelemetry)
+  - Add micrometer-tracing-bridge-otel; propagate `traceId`/`spanId` via W3C and/or B3.
+  - AC: `traceId` present in logs and Problem JSON; spans around MVC/API handlers and DB calls.
+- Structured JSON logging
+  - Logback JSON encoder profile: `dev` human‑readable; `prod` JSON lines. MDC fields: `traceId`, `userId`, optional `venueId`/`kegId` when known.
+  - AC: Logs parse as JSON; sensitive fields redacted; correlation works across async threads.
+- Metrics
+  - Micrometer timers for controllers/HTTP server; counters for tap/pour/blow/untap; gauges for keg status counts.
+  - AC: `/actuator/metrics` exposes custom meters; sample dashboards described in docs.
+
+Artifacts
+- `pom.xml`, `src/main/resources/logback-*.xml`, `src/main/java/**/config/TracingConfig.java`
+- `docs/ops/observability.md` (how-to, field mapping)
+
+## Sprint 6 — Runtime Profiles Hardening
+- Management endpoints
+  - Dev: expose `health,info,prometheus,metrics,loggers`. Prod: `health,info` only; `/h2-console` and Swagger UI disabled.
+  - AC: Profiles enforce exposure; security returns 403 for blocked endpoints in `prod`.
+- Connection pool tuning
+  - Hikari defaults (timeouts, max size, leak detection in `dev`). Expose pool metrics via Micrometer.
+  - AC: Pool metrics visible; timeouts prevent thread starvation under load.
+- 12‑factor configuration
+  - Externalize secrets via env; document precedence; fail fast on missing required envs.
+  - AC: No secrets logged; startup fails with clear message when config missing.
+
+Artifacts
+- `src/main/resources/application-dev.yml`, `application-prod.yml`
+- Security/OpenAPI conditional config; `docs/ops/runtime-profiles.md`
+
+## Sprint 7 — DB Performance & Housekeeping
+- Repeatable migrations and indexes
+  - Add Flyway `R__indexes.sql` for hot‑path queries; validate parity H2 vs Postgres.
+  - AC: Query plans improved for tap/keg list endpoints; docs include sample EXPLAIN plans.
+- Maintenance guidance (docs)
+  - Vacuum/Autovacuum and basic Postgres maintenance notes.
+  - AC: `docs/db/postgres-maintenance.md` covers defaults and recommended overrides.
+- Backups & restore runbook (docs)
+  - Steps for `pg_dump/pg_restore` and local restore.
+  - AC: Runbook validated locally.
+
+Artifacts
+- `src/main/resources/db/migration/R__indexes.sql`, `docs/db/*.md`
+
+## Sprint 8 — Testcontainers & CI Enhancements
+- Testcontainers base
+  - Base IT class for repositories/services using Postgres container; profile‑guarded.
+  - AC: At least two ITs (repo + simple service) run green locally and in CI.
+- CI performance
+  - Cache Maven repo; cache Docker/Testcontainers layers; split unit vs IT stages.
+  - AC: CI time reduced; no flaky retries needed.
+
+Artifacts
+- `src/test/java/**/it/*`, `.github/workflows/ci.yml`, `Makefile`
+
+## Sprint 9 — Local Dev UX
+- Compose stack
+  - `compose.yaml` for Postgres + pgAdmin; seeded bootstrap user.
+  - AC: `docker compose up` + `SPRING_PROFILES_ACTIVE=prod` boots app against Postgres locally.
+- Developer bootstrap scripts
+  - `bin/dev-up.sh` to start stack; `bin/dev-down.sh` to clean.
+  - AC: One‑command spin‑up documented in README.
+
+Artifacts
+- `compose.yaml`, `bin/dev-*.sh`, `README.md` additions
