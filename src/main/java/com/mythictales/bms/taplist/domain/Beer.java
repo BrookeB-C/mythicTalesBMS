@@ -68,4 +68,33 @@ public class Beer {
   public void setAbv(double abv) {
     this.abv = abv;
   }
+
+  // Optional reference to owning Brewery. If null, breweryName must be non-blank.
+  @ManyToOne(optional = true)
+  private Brewery brewery;
+
+  // Fallback brewery name when not linked to a Brewery entity
+  private String breweryName;
+
+  public Brewery getBrewery() {
+    return brewery;
+  }
+
+  public void setBrewery(Brewery brewery) {
+    this.brewery = brewery;
+  }
+
+  public String getBreweryName() {
+    return breweryName;
+  }
+
+  public void setBreweryName(String breweryName) {
+    this.breweryName = breweryName;
+  }
+
+  @AssertTrue(message = "breweryName must be provided when breweryId is null")
+  public boolean isBreweryAssociationValid() {
+    if (this.brewery != null) return true;
+    return this.breweryName != null && !this.breweryName.isBlank();
+  }
 }
