@@ -10,7 +10,7 @@ import com.mythictales.bms.taplist.repo.*;
 import com.mythictales.bms.taplist.service.TapService;
 
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
+@org.springframework.context.annotation.Profile("dev")
 public class DataInitializer {
   @Bean
   CommandLineRunner initData(
@@ -86,7 +86,10 @@ public class DataInitializer {
       k3.setSerialNumber(nextSerial.apply(br, "MTB"));
       k3.setStatus(KegStatus.FILLED);
       kegs.save(k3);
-      users.save(new UserAccount("siteadmin", encoder.encode("password"), Role.SITE_ADMIN));
+      // Only create siteadmin if it does not already exist
+      if (users.findByUsername("siteadmin").isEmpty()) {
+        users.save(new UserAccount("siteadmin", encoder.encode("password"), Role.SITE_ADMIN));
+      }
       var brew = new UserAccount("brewadmin", encoder.encode("password"), Role.BREWERY_ADMIN);
       brew.setBrewery(br);
       users.save(brew);
