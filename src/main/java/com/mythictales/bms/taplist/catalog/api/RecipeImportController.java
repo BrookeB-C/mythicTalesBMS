@@ -16,6 +16,10 @@ import com.mythictales.bms.taplist.catalog.service.RecipeImportService.Duplicate
 import com.mythictales.bms.taplist.service.BusinessValidationException;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -34,6 +38,32 @@ public class RecipeImportController {
   @PreAuthorize(
       "hasAnyRole('SITE_ADMIN','BREWERY_ADMIN') and (#breweryId == principal.breweryId or hasRole('SITE_ADMIN'))")
   @Operation(summary = "Import BeerXML or BeerSmith XML; returns created recipe IDs")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Import ok",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = "{\"ids\":[1,2,3]}"))),
+    @ApiResponse(
+        responseCode = "409",
+        description = "Duplicate",
+        content =
+            @Content(
+                mediaType = "application/problem+json",
+                examples =
+                    @ExampleObject(
+                        value =
+                            "{\"status\":409,\"error\":\"Conflict\",\"message\":\"Duplicate recipe\",\"details\":{\"existingId\":1}}"))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Bad request",
+        content =
+            @Content(
+                mediaType = "application/problem+json",
+                examples = @ExampleObject(value = "{\"status\":400,\"error\":\"Bad Request\"}")))
+  })
   public ResponseEntity<?> importRecipes(
       @RequestParam("breweryId") Long breweryId,
       @RequestParam(value = "force", defaultValue = "false") boolean force,

@@ -45,11 +45,168 @@
   </form>
 
   <section>
-    <h2>Ingredients & Mash</h2>
-    <p>Editing for ingredients and mash steps can be added later. Exports include current data.</p>
+    <h2>Fermentables</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Amount (kg)</th><th>Yield %</th><th>Color L</th><th>Late</th><th>Type</th><th class="actions">Actions</th></tr></thead>
+      <tbody>
+        <tr th:each="f : ${recipe.fermentables}">
+          <td th:text="${f.name}">Pale Malt</td>
+          <td th:text="${f.amountKg}">4.5</td>
+          <td th:text="${f.yieldPercent}">80</td>
+          <td th:text="${f.colorLovibond}">3</td>
+          <td th:text="${f.lateAddition}">false</td>
+          <td th:text="${f.type}">Grain</td>
+          <td class="actions">
+            <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/fermentables/' + ${f.id} + '/delete'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/fermentables/add'}" class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>Name<input name="name" required/></label>
+      <label>Amount Kg<input type="number" step="0.001" name="amountKg"/></label>
+      <label>Yield %<input type="number" step="0.1" name="yieldPercent"/></label>
+      <label>Color L<input type="number" step="0.1" name="colorLovibond"/></label>
+      <label>Late Addition <input type="checkbox" name="lateAddition"/></label>
+      <label>Type<input name="type"/></label>
+      <button class="btn" type="submit">Add Fermentable</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Hops</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Alpha %</th><th>Amount (g)</th><th>Time (min)</th><th>Use</th><th>Form</th><th>IBU</th><th class="actions">Actions</th></tr></thead>
+      <tbody>
+        <tr th:each="h : ${recipe.hops}">
+          <td th:text="${h.name}">Cascade</td>
+          <td th:text="${h.alphaAcid}">5.5</td>
+          <td th:text="${h.amountGrams}">28</td>
+          <td th:text="${h.timeMinutes}">60</td>
+          <td th:text="${h.useFor}">Boil</td>
+          <td th:text="${h.form}">Pellet</td>
+          <td th:text="${h.ibuContribution}">25</td>
+          <td class="actions">
+            <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/hops/' + ${h.id} + '/delete'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/hops/add'}" class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>Name<input name="name" required/></label>
+      <label>Alpha %<input type="number" step="0.01" name="alphaAcid"/></label>
+      <label>Amount (g)<input type="number" step="0.1" name="amountGrams"/></label>
+      <label>Time (min)<input type="number" step="1" name="timeMinutes"/></label>
+      <label>Use<input name="useFor"/></label>
+      <label>Form<input name="form"/></label>
+      <label>IBU<input type="number" step="0.1" name="ibuContribution"/></label>
+      <button class="btn" type="submit">Add Hop</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Yeasts</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Lab</th><th>Product</th><th>Type</th><th>Form</th><th>Attenuation</th><th class="actions">Actions</th></tr></thead>
+      <tbody>
+        <tr th:each="y : ${recipe.yeasts}">
+          <td th:text="${y.name}">US-05</td>
+          <td th:text="${y.laboratory}">Fermentis</td>
+          <td th:text="${y.productId}">US-05</td>
+          <td th:text="${y.type}">Ale</td>
+          <td th:text="${y.form}">Dry</td>
+          <td th:text="${y.attenuation}">78</td>
+          <td class="actions">
+            <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/yeasts/' + ${y.id} + '/delete'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/yeasts/add'}" class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>Name<input name="name"/></label>
+      <label>Laboratory<input name="laboratory"/></label>
+      <label>Product ID<input name="productId"/></label>
+      <label>Type<input name="type"/></label>
+      <label>Form<input name="form"/></label>
+      <label>Attenuation<input type="number" step="0.1" name="attenuation"/></label>
+      <button class="btn" type="submit">Add Yeast</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Misc</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Type</th><th>Amount</th><th>Unit</th><th>Use</th><th class="actions">Actions</th></tr></thead>
+      <tbody>
+        <tr th:each="m : ${recipe.miscs}">
+          <td th:text="${m.name}">Irish Moss</td>
+          <td th:text="${m.type}">Fining</td>
+          <td th:text="${m.amount}">5</td>
+          <td th:text="${m.amountUnit}">g</td>
+          <td th:text="${m.useFor}">Boil</td>
+          <td class="actions">
+            <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/miscs/' + ${m.id} + '/delete'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/miscs/add'}" class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>Name<input name="name"/></label>
+      <label>Type<input name="type"/></label>
+      <label>Amount<input type="number" step="0.1" name="amount"/></label>
+      <label>Unit<input name="amountUnit"/></label>
+      <label>Use<input name="useFor"/></label>
+      <button class="btn" type="submit">Add Misc</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Mash Steps</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Type</th><th>Temp (°C)</th><th>Time (min)</th><th>Infuse (L)</th><th class="actions">Actions</th></tr></thead>
+      <tbody>
+        <tr th:each="ms : ${recipe.mashSteps}">
+          <td th:text="${ms.name}">Sacch Rest</td>
+          <td th:text="${ms.type}">Infusion</td>
+          <td th:text="${ms.stepTempC}">66.0</td>
+          <td th:text="${ms.stepTimeMinutes}">60</td>
+          <td th:text="${ms.infuseAmountLiters}">10.0</td>
+          <td class="actions">
+            <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/mash/' + ${ms.id} + '/delete'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id} + '/mash/add'}" class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <label>Name<input name="name"/></label>
+      <label>Type<input name="type"/></label>
+      <label>Temp (°C)<input type="number" step="0.1" name="stepTempC"/></label>
+      <label>Time (min)<input type="number" step="1" name="stepTimeMinutes"/></label>
+      <label>Infuse (L)<input type="number" step="0.1" name="infuseAmountLiters"/></label>
+      <button class="btn" type="submit">Add Step</button>
+    </form>
   </section>
 </main>
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-

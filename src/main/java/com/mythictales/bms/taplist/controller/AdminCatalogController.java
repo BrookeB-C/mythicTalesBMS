@@ -31,15 +31,22 @@ public class AdminCatalogController {
       @RequestParam(value = "q", required = false) String q,
       Model model) {
     Long breweryId = user != null ? user.getBreweryId() : null;
-    List<Recipe> list = breweryId != null ? recipes.findAll().stream()
-            .filter(r -> r.getBrewery() != null && breweryId.equals(r.getBrewery().getId()))
-            .collect(Collectors.toList()) : recipes.findAll();
+    List<Recipe> list =
+        breweryId != null
+            ? recipes.findAll().stream()
+                .filter(r -> r.getBrewery() != null && breweryId.equals(r.getBrewery().getId()))
+                .collect(Collectors.toList())
+            : recipes.findAll();
     if (q != null && !q.isBlank()) {
       String qq = q.toLowerCase();
-      list = list.stream()
-          .filter(r -> (r.getName() != null && r.getName().toLowerCase().contains(qq))
-              || (r.getStyleName() != null && r.getStyleName().toLowerCase().contains(qq)))
-          .collect(Collectors.toList());
+      list =
+          list.stream()
+              .filter(
+                  r ->
+                      (r.getName() != null && r.getName().toLowerCase().contains(qq))
+                          || (r.getStyleName() != null
+                              && r.getStyleName().toLowerCase().contains(qq)))
+              .collect(Collectors.toList());
       if (list.size() == 1) {
         return "redirect:/admin/catalog/recipes/" + list.get(0).getId();
       }
@@ -55,7 +62,8 @@ public class AdminCatalogController {
     Recipe r = recipes.findById(id).orElseThrow();
     if (user != null && user.getBreweryId() != null && r.getBrewery() != null) {
       if (!user.getBreweryId().equals(r.getBrewery().getId())) {
-        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant edit forbidden");
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant edit forbidden");
       }
     }
     model.addAttribute("recipe", r);
@@ -75,7 +83,8 @@ public class AdminCatalogController {
     Recipe r = recipes.findById(id).orElseThrow();
     if (user != null && user.getBreweryId() != null && r.getBrewery() != null) {
       if (!user.getBreweryId().equals(r.getBrewery().getId())) {
-        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant edit forbidden");
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant edit forbidden");
       }
     }
     if (name != null && !name.isBlank()) r.setName(name.trim());
@@ -88,6 +97,198 @@ public class AdminCatalogController {
     return "redirect:/admin/catalog/recipes/" + id;
   }
 
+  // ---------- Fermentables ----------
+  @PostMapping("/{id}/fermentables/add")
+  public String addFermentable(
+      @PathVariable Long id,
+      @AuthenticationPrincipal CurrentUser user,
+      @RequestParam("name") String name,
+      @RequestParam(value = "amountKg", required = false) Double amountKg,
+      @RequestParam(value = "yieldPercent", required = false) Double yieldPercent,
+      @RequestParam(value = "colorLovibond", required = false) Double colorLovibond,
+      @RequestParam(value = "lateAddition", required = false) Boolean lateAddition,
+      @RequestParam(value = "type", required = false) String type) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    if (user != null && user.getBreweryId() != null && r.getBrewery() != null) {
+      if (!user.getBreweryId().equals(r.getBrewery().getId())) {
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant edit forbidden");
+      }
+    }
+    var f = new com.mythictales.bms.taplist.catalog.domain.RecipeFermentable();
+    f.setRecipe(r);
+    f.setName(name);
+    f.setAmountKg(amountKg);
+    f.setYieldPercent(yieldPercent);
+    f.setColorLovibond(colorLovibond);
+    f.setLateAddition(lateAddition);
+    f.setType(type);
+    r.getFermentables().add(f);
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  @PostMapping("/{id}/fermentables/{fid}/delete")
+  public String deleteFermentable(
+      @PathVariable Long id, @PathVariable Long fid, @AuthenticationPrincipal CurrentUser user) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    r.getFermentables().removeIf(x -> fid.equals(x.getId()));
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  // ---------- Hops ----------
+  @PostMapping("/{id}/hops/add")
+  public String addHop(
+      @PathVariable Long id,
+      @AuthenticationPrincipal CurrentUser user,
+      @RequestParam("name") String name,
+      @RequestParam(value = "alphaAcid", required = false) Double alphaAcid,
+      @RequestParam(value = "amountGrams", required = false) Double amountGrams,
+      @RequestParam(value = "timeMinutes", required = false) Integer timeMinutes,
+      @RequestParam(value = "useFor", required = false) String useFor,
+      @RequestParam(value = "form", required = false) String form,
+      @RequestParam(value = "ibuContribution", required = false) Double ibuContribution) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    var h = new com.mythictales.bms.taplist.catalog.domain.RecipeHop();
+    h.setRecipe(r);
+    h.setName(name);
+    h.setAlphaAcid(alphaAcid);
+    h.setAmountGrams(amountGrams);
+    h.setTimeMinutes(timeMinutes);
+    h.setUseFor(useFor);
+    h.setForm(form);
+    h.setIbuContribution(ibuContribution);
+    r.getHops().add(h);
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  @PostMapping("/{id}/hops/{hid}/delete")
+  public String deleteHop(
+      @PathVariable Long id, @PathVariable Long hid, @AuthenticationPrincipal CurrentUser user) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    r.getHops().removeIf(x -> hid.equals(x.getId()));
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  // ---------- Yeasts ----------
+  @PostMapping("/{id}/yeasts/add")
+  public String addYeast(
+      @PathVariable Long id,
+      @AuthenticationPrincipal CurrentUser user,
+      @RequestParam(value = "name", required = false) String name,
+      @RequestParam(value = "laboratory", required = false) String laboratory,
+      @RequestParam(value = "productId", required = false) String productId,
+      @RequestParam(value = "type", required = false) String type,
+      @RequestParam(value = "form", required = false) String form,
+      @RequestParam(value = "attenuation", required = false) Double attenuation) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    var y = new com.mythictales.bms.taplist.catalog.domain.RecipeYeast();
+    y.setRecipe(r);
+    y.setName(name);
+    y.setLaboratory(laboratory);
+    y.setProductId(productId);
+    y.setType(type);
+    y.setForm(form);
+    y.setAttenuation(attenuation);
+    r.getYeasts().add(y);
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  @PostMapping("/{id}/yeasts/{yid}/delete")
+  public String deleteYeast(
+      @PathVariable Long id, @PathVariable Long yid, @AuthenticationPrincipal CurrentUser user) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    r.getYeasts().removeIf(x -> yid.equals(x.getId()));
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  // ---------- Miscs ----------
+  @PostMapping("/{id}/miscs/add")
+  public String addMisc(
+      @PathVariable Long id,
+      @AuthenticationPrincipal CurrentUser user,
+      @RequestParam(value = "name", required = false) String name,
+      @RequestParam(value = "type", required = false) String type,
+      @RequestParam(value = "amount", required = false) Double amount,
+      @RequestParam(value = "amountUnit", required = false) String amountUnit,
+      @RequestParam(value = "useFor", required = false) String useFor) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    var m = new com.mythictales.bms.taplist.catalog.domain.RecipeMisc();
+    m.setRecipe(r);
+    m.setName(name);
+    m.setType(type);
+    m.setAmount(amount);
+    m.setAmountUnit(amountUnit);
+    m.setUseFor(useFor);
+    r.getMiscs().add(m);
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  @PostMapping("/{id}/miscs/{mid}/delete")
+  public String deleteMisc(
+      @PathVariable Long id, @PathVariable Long mid, @AuthenticationPrincipal CurrentUser user) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    r.getMiscs().removeIf(x -> mid.equals(x.getId()));
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  // ---------- Mash Steps ----------
+  @PostMapping("/{id}/mash/add")
+  public String addMash(
+      @PathVariable Long id,
+      @AuthenticationPrincipal CurrentUser user,
+      @RequestParam(value = "name", required = false) String name,
+      @RequestParam(value = "type", required = false) String type,
+      @RequestParam(value = "stepTempC", required = false) Double stepTempC,
+      @RequestParam(value = "stepTimeMinutes", required = false) Integer stepTimeMinutes,
+      @RequestParam(value = "infuseAmountLiters", required = false) Double infuseAmountLiters) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    var ms = new com.mythictales.bms.taplist.catalog.domain.MashStep();
+    ms.setRecipe(r);
+    ms.setName(name);
+    ms.setType(type);
+    ms.setStepTempC(stepTempC);
+    ms.setStepTimeMinutes(stepTimeMinutes);
+    ms.setInfuseAmountLiters(infuseAmountLiters);
+    r.getMashSteps().add(ms);
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  @PostMapping("/{id}/mash/{msid}/delete")
+  public String deleteMash(
+      @PathVariable Long id, @PathVariable Long msid, @AuthenticationPrincipal CurrentUser user) {
+    Recipe r = recipes.findById(id).orElseThrow();
+    authorize(user, r);
+    r.getMashSteps().removeIf(x -> msid.equals(x.getId()));
+    recipes.save(r);
+    return "redirect:/admin/catalog/recipes/" + id;
+  }
+
+  private void authorize(CurrentUser user, Recipe r) {
+    if (user != null && user.getBreweryId() != null && r.getBrewery() != null) {
+      if (!user.getBreweryId().equals(r.getBrewery().getId())) {
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant edit forbidden");
+      }
+    }
+  }
+
   @GetMapping("/{id}/export")
   public ResponseEntity<byte[]> exportXml(
       @PathVariable Long id,
@@ -96,14 +297,20 @@ public class AdminCatalogController {
     Recipe r = recipes.findById(id).orElseThrow();
     if (user != null && user.getBreweryId() != null && r.getBrewery() != null) {
       if (!user.getBreweryId().equals(r.getBrewery().getId())) {
-        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant export forbidden");
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant export forbidden");
       }
     }
-    String xml = switch (format.toLowerCase()) {
-      case "beersmith" -> toBeerSmithXml(r);
-      default -> toBeerXml(r);
-    };
-    String filename = (r.getName() != null ? r.getName().replaceAll("\\s+", "_") : "recipe") + "-" + format + ".xml";
+    String xml =
+        switch (format.toLowerCase()) {
+          case "beersmith" -> toBeerSmithXml(r);
+          default -> toBeerXml(r);
+        };
+    String filename =
+        (r.getName() != null ? r.getName().replaceAll("\\s+", "_") : "recipe")
+            + "-"
+            + format
+            + ".xml";
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
         .contentType(MediaType.APPLICATION_XML)
@@ -218,7 +425,10 @@ public class AdminCatalogController {
       tag(sb, "AmountKg", dbl(f.getAmountKg()));
       tag(sb, "Yield", dbl(f.getYieldPercent()));
       tag(sb, "Color", dbl(f.getColorLovibond()));
-      tag(sb, "LateAddition", f.getLateAddition() != null ? (f.getLateAddition() ? "true" : "false") : null);
+      tag(
+          sb,
+          "LateAddition",
+          f.getLateAddition() != null ? (f.getLateAddition() ? "true" : "false") : null);
       tag(sb, "Type", f.getType());
       sb.append("</Fermentable>");
     }
@@ -279,7 +489,13 @@ public class AdminCatalogController {
 
   private static void tag(StringBuilder sb, String name, String val) {
     if (val == null) return;
-    sb.append('<').append(name).append('>').append(escape(val)).append("</").append(name).append('>');
+    sb.append('<')
+        .append(name)
+        .append('>')
+        .append(escape(val))
+        .append("</")
+        .append(name)
+        .append('>');
   }
 
   private static void tag(StringBuilder sb, String name, Integer val) {
@@ -292,11 +508,15 @@ public class AdminCatalogController {
     tag(sb, name, String.valueOf(val));
   }
 
-  private static String dbl(Double d) { return d == null ? null : String.valueOf(d); }
-  private static Integer intv(Integer i) { return i; }
+  private static String dbl(Double d) {
+    return d == null ? null : String.valueOf(d);
+  }
+
+  private static Integer intv(Integer i) {
+    return i;
+  }
 
   private static String escape(String s) {
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
   }
 }
-
