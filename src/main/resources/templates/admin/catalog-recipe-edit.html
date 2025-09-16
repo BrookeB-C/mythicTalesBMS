@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="${'Edit Recipe — ' + (recipe != null ? recipe.name : '')}">Edit Recipe</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+  <style>
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.75rem}
+    .actions-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.75rem 0}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Edit Recipe</h1>
+  <p><a class="btn ghost" th:href="@{/admin/catalog/recipes}">⟵ Back to Recipes</a></p>
+</header>
+<main>
+  <form method="post" th:action="@{'/admin/catalog/recipes/' + ${recipe.id}}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <div class="form-grid">
+      <label>Name
+        <input name="name" th:value="${recipe.name}" required />
+      </label>
+      <label>Style Name
+        <input name="styleName" th:value="${recipe.styleName}" />
+      </label>
+      <label>Type
+        <input name="type" th:value="${recipe.type}" />
+      </label>
+      <label>Batch Size (L)
+        <input type="number" step="0.1" name="batchSizeLiters" th:value="${recipe.batchSizeLiters}" />
+      </label>
+      <label>Boil Time (min)
+        <input type="number" step="1" name="boilTimeMinutes" th:value="${recipe.boilTimeMinutes}" />
+      </label>
+    </div>
+    <label>Notes
+      <textarea name="notes" rows="6" th:text="${recipe.notes}"></textarea>
+    </label>
+    <div class="actions-row">
+      <button class="btn" type="submit">Save</button>
+      <a class="btn" th:href="@{'/admin/catalog/recipes/' + ${recipe.id} + '/export'(format='beerxml')}">Export BeerXML</a>
+      <a class="btn" th:href="@{'/admin/catalog/recipes/' + ${recipe.id} + '/export'(format='beersmith')}">Export BeerSmith XML</a>
+    </div>
+  </form>
+
+  <section>
+    <h2>Ingredients & Mash</h2>
+    <p>Editing for ingredients and mash steps can be added later. Exports include current data.</p>
+  </section>
+</main>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
+

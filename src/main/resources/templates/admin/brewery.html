@@ -261,7 +261,7 @@
           <td th:text="${b.style}">Style</td>
           <td th:text="${#numbers.formatDecimal(b.abv, 1, 1)} + '%'">5.5%</td>
           <td class="actions">
-            <a class="btn" th:href="@{'/api/v1/catalog/recipes'(breweryId=${brewery != null ? brewery.id : 0})}" target="_blank">Edit Recipe</a>
+            <a class="btn" th:href="@{'/admin/catalog/recipes'(q=${b.name})}">Edit Recipe</a>
           </td>
         </tr>
       </tbody>
