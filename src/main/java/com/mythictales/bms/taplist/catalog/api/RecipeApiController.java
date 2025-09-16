@@ -12,6 +12,11 @@ import com.mythictales.bms.taplist.catalog.api.dto.RecipeDto;
 import com.mythictales.bms.taplist.catalog.repo.RecipeRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -28,6 +33,19 @@ public class RecipeApiController {
   @PreAuthorize(
       "hasAnyRole('SITE_ADMIN','BREWERY_ADMIN') and (#breweryId == principal.breweryId or hasRole('SITE_ADMIN'))")
   @Operation(summary = "List recipes for a brewery")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Paged recipes",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "RecipePage",
+                        value =
+                            "{\n  \"content\": [{\n    \"id\": 1, \"breweryId\": 9, \"name\": \"House IPA\", \"styleName\": \"American IPA\", \"type\": \"All Grain\", \"batchSizeLiters\": 20.0, \"boilTimeMinutes\": 60, \"abv\": 6.5\n  }],\n  \"pageable\": {\"pageNumber\":0,\"pageSize\":20},\n  \"totalElements\": 1, \"totalPages\": 1\n}")))
+  })
   public Page<RecipeDto> list(
       @RequestParam("breweryId") Long breweryId,
       @ParameterObject @PageableDefault(sort = "createdAt") Pageable pageable) {
@@ -37,6 +55,23 @@ public class RecipeApiController {
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN')")
   @Operation(summary = "Get a recipe by id (with children)")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Recipe",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema =
+                    @Schema(
+                        implementation =
+                            com.mythictales.bms.taplist.catalog.api.dto.RecipeDto.class),
+                examples =
+                    @ExampleObject(
+                        name = "Recipe",
+                        value =
+                            "{\n  \"id\": 1, \"breweryId\": 9, \"name\": \"House IPA\", \"styleName\": \"American IPA\",\n  \"hops\": [{\"name\": \"Cascade\", \"amountGrams\": 28.0, \"timeMinutes\": 60}]\n}")))
+  })
   public ResponseEntity<RecipeDto> get(
       @PathVariable Long id,
       @org.springframework.security.core.annotation.AuthenticationPrincipal

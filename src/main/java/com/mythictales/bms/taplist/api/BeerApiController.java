@@ -16,6 +16,11 @@ import com.mythictales.bms.taplist.repo.BeerRepository;
 import com.mythictales.bms.taplist.service.BusinessValidationException;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -48,6 +53,20 @@ public class BeerApiController {
   @PatchMapping(value = "/{id}/styleRef", consumes = MediaType.APPLICATION_JSON_VALUE)
   @PreAuthorize("hasRole('SITE_ADMIN') or hasRole('BREWERY_ADMIN')")
   @Operation(summary = "Link a BJCP style to a beer")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Beer updated",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema =
+                    @Schema(implementation = com.mythictales.bms.taplist.api.dto.BeerDto.class),
+                examples =
+                    @ExampleObject(
+                        value =
+                            "{\"id\":1,\"name\":\"Pale Ale\",\"style\":\"American Pale Ale\",\"styleRefId\":42,\"abv\":5.5}")))
+  })
   public ResponseEntity<BeerDto> linkStyle(
       @PathVariable Long id, @RequestBody StyleLinkRequest req) {
     if (req == null || req.styleId == null) {
@@ -63,6 +82,13 @@ public class BeerApiController {
   @DeleteMapping("/{id}/styleRef")
   @PreAuthorize("hasRole('SITE_ADMIN') or hasRole('BREWERY_ADMIN')")
   @Operation(summary = "Unlink BJCP style from a beer")
+  @ApiResponse(
+      responseCode = "200",
+      description = "Beer updated",
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = com.mythictales.bms.taplist.api.dto.BeerDto.class)))
   public ResponseEntity<BeerDto> unlinkStyle(@PathVariable Long id) {
     Beer b = beers.findById(id).orElseThrow(java.util.NoSuchElementException::new);
     b.setStyleRef(null);
