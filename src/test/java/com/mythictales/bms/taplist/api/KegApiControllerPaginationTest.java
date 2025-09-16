@@ -17,7 +17,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.mythictales.bms.taplist.domain.Keg;
 import com.mythictales.bms.taplist.repo.BeerRepository;
@@ -26,7 +25,7 @@ import com.mythictales.bms.taplist.repo.KegRepository;
 import com.mythictales.bms.taplist.repo.KegSizeSpecRepository;
 import com.mythictales.bms.taplist.repo.VenueRepository;
 
-class KegApiControllerPaginationTest {
+class KegApiControllerPaginationTest extends BaseApiControllerTest {
 
   private KegRepository kegs;
   private VenueRepository venues;
@@ -43,10 +42,7 @@ class KegApiControllerPaginationTest {
     beers = Mockito.mock(BeerRepository.class);
     sizes = Mockito.mock(KegSizeSpecRepository.class);
     var controller = new KegApiController(kegs, venues, breweries, beers, sizes);
-    mvc =
-        MockMvcBuilders.standaloneSetup(controller)
-            .setControllerAdvice(new com.mythictales.bms.taplist.config.RestExceptionHandler())
-            .build();
+    mvc = buildMvc(controller);
   }
 
   @Test

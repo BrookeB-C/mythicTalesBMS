@@ -85,7 +85,7 @@ Done criteria
   - `GET /api/v1/catalog/styles` and `GET /api/v1/catalog/styles/{id}` for lookup
   - `POST /api/v1/catalog/styles/import` (CSV, SITE_ADMIN)
   - CSV columns: `code,name,category,subcategory,year,og_min,og_max,fg_min,fg_max,ibu_min,ibu_max,abv_min,abv_max,srm_min,srm_max,notes`
-- Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
+  - Tenant linking: Beers can link to `BjcpStyle` via `beer.styleRef`
   - Server-side filters: `year` and `q` (matches `code` or `name`), plus `page/size/sort`
 
 ## Production — Run Planning MVP

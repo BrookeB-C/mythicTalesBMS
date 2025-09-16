@@ -82,6 +82,23 @@ Tap shape:
 - `POST /api/v1/kegs/{id}/clean` (brewery admin)
   - 200: `Keg` with `status=CLEAN`
 
+— Partners (External Recipients) —
+- Purpose: manage external recipients for keg transfers (outside our tenant venues).
+- `GET /api/v1/partners/external-venues`
+- `POST /api/v1/partners/external-venues` (brewery admin)
+  - Body: `{ "name": string, "contact"?: { ... }, "address"?: { ... } }`
+- `GET /api/v1/partners/distributors`
+- `POST /api/v1/partners/distributors` (brewery admin)
+  - Body: `{ "name": string, "licenseNumber"?: string, "contact"?: { ... } }`
+
+Notes on external keg flows
+- Kegs transferred to external venues/distributors remain `status=DISTRIBUTED` until they are returned; no `RECEIVED` step is recorded inside our tenant.
+- Add an extended distribute API when destination is external:
+  - `POST /api/v1/kegs/{id}/distribute`
+    - Body (extended): `{ "venueId"?: number, "externalVenueId"?: number, "distributorId"?: number }` (exactly one required)
+    - 200: `Keg` with `status=DISTRIBUTED` and destination reference
+  - `POST /api/v1/kegs/{id}/return` is used to mark the keg returned from any destination (internal or external).
+
 Keg shape:
 ```
 {
@@ -230,3 +247,20 @@ Additional Notes (from product decisions)
 - Receive‑before‑tap: API allows `tap-keg` even if keg is DISTRIBUTED (RECEIVED is not strictly required).
 - Big‑board: add a dedicated MVC route `GET /taplist/board?venueId=...` (read‑only, lightweight payload) with auto‑refresh every 15s.
 - QR scanning: camera/PWA should parse JSON payload that includes `serial` and `breweryId`.
+
+— Production —
+- Entities: ProductionFacility, BrewSystem, Fermentor, ProductionRun.
+- `GET /api/v1/production/facilities`
+- `GET /api/v1/production/brew-systems`
+  - BrewSystem fields include `capacity` and `unit` (`GALLONS|LITERS|BBL`).
+- `GET /api/v1/production/fermentors`
+  - Include scheduling info (availability windows, capacity, unit).
+- `GET /api/v1/production/fermentors/{id}/schedule`
+  - 200: calendar view of bookings (runs occupying the vessel).
+- `POST /api/v1/production/runs`
+  - Body: `{ "breweryId": number, "facilityId": number, "brewSystemId": number, "fermentorId"?: number, "recipeId"?: number, "scaledTargetVolume"?: number, "startAt": string, "notes"?: string, "saveRecipeChangeToCatalog"?: { "mode": "NEW|REPLACE", "name"?: string } }`
+  - Behavior: Creates a ProductionRun; validates brew system availability at `startAt`; warns if a suitable fermentor will not be available when brewing is expected to finish; optionally links a fermentor.
+- `PATCH /api/v1/production/runs/{id}`
+  - Allows updating recipe adjustments on the run; if `saveRecipeChangeToCatalog` is provided, writes to Catalog as new or replaces the referenced Recipe.
+- `GET /api/v1/production/runs/{id}/shopping-list`
+  - 200: computed list of materials required from Production Inventory based on the selected/scaled recipe.

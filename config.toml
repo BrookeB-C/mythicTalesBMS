@@ -105,6 +105,7 @@ swagger = "open http://localhost:8080/swagger-ui.html"
 
 # =====================
 # Additional Genie Profiles (Coordination + Product)
+# Tech Lead Profile (coordination role)
 # =====================
 
 [genies.techlead]
@@ -122,7 +123,7 @@ guide = "docs/agents/genie-product-manager.md"
 tasks_file = "docs/techtasks/102-genie-product-manager-tasks.md"
 enabled = true
 env = { AGENT_ROLE = "product-manager", SPRING_PROFILES_ACTIVE = "dev" }
-paths_include = ["docs/**", "src/main/resources/**"]
+paths_include = ["docs/**","requirements/**" "src/main/resources/**"]
 checks = { run_tests = false, formatter_check = true }
 
 # =====================

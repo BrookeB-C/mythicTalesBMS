@@ -6,7 +6,7 @@ create table if not exists bjcp_style (
   name varchar(255) not null,
   category varchar(255),
   subcategory varchar(32),
-  year integer,
+  guideline_year integer,
   og_min double,
   og_max double,
   fg_min double,
@@ -18,10 +18,9 @@ create table if not exists bjcp_style (
   srm_min double,
   srm_max double,
   notes varchar(2000),
-  constraint uq_bjcp_code_year unique (code, year)
+  constraint uq_bjcp_code_year unique (code, guideline_year)
 );
 
 alter table beer add column if not exists style_ref_id bigint;
 alter table beer add constraint fk_beer_style_ref foreign key (style_ref_id) references bjcp_style(id);
 create index if not exists idx_beer_style_ref on beer(style_ref_id);
-

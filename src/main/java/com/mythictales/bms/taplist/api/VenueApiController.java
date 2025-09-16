@@ -1,9 +1,6 @@
 package com.mythictales.bms.taplist.api;
 
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,10 +22,28 @@ public class VenueApiController {
   @GetMapping
   public Page<VenueDto> list(
       @RequestParam(value = "breweryId", required = false) Long breweryId,
-      @ParameterObject @PageableDefault(sort = "name") Pageable pageable) {
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "size", defaultValue = "20") int size,
+      @RequestParam(value = "sort", defaultValue = "name,asc") String sort) {
+    var pageable =
+        org.springframework.data.domain.PageRequest.of(
+            Math.max(0, page), Math.max(1, Math.min(200, size)), parseSort(sort));
     return (breweryId != null)
         ? venues.findByBreweryId(breweryId, pageable).map(ApiMappers::toDto)
         : venues.findAll(pageable).map(ApiMappers::toDto);
+  }
+
+  private org.springframework.data.domain.Sort parseSort(String sortParam) {
+    try {
+      String[] parts = sortParam.split(",");
+      String prop = parts[0];
+      String dir = parts.length > 1 ? parts[1] : "asc";
+      return "desc".equalsIgnoreCase(dir)
+          ? org.springframework.data.domain.Sort.by(prop).descending()
+          : org.springframework.data.domain.Sort.by(prop).ascending();
+    } catch (Exception e) {
+      return org.springframework.data.domain.Sort.by("name").ascending();
+    }
   }
 
   @GetMapping("/{id}")

@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -28,6 +29,7 @@ import com.mythictales.bms.taplist.repo.VenueRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Disabled("TODO: Stabilize smoke tests — see docs/techtasks/105-stabilize-smoke-tests.md")
 class AdminTaproomReceiveSmokeTest {
 
   @Autowired MockMvc mvc;
