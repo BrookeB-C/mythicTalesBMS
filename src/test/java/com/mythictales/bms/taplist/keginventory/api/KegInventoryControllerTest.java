@@ -82,6 +82,22 @@ class KegInventoryControllerTest extends BaseApiControllerTest {
   }
 
   @Test
+  void assign_forbidden_returns_403() throws Exception {
+    // Mock service to throw AccessDeniedException
+    given(service.assignToVenue(any(), eq(1L), eq(10L)))
+        .willThrow(new org.springframework.security.access.AccessDeniedException("Forbidden"));
+
+    String body = om.writeValueAsString(new AssignRequest(1L, 10L));
+    mvc.perform(
+            post("/api/v1/keg-inventory/assign")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.status", is(403)))
+        .andExpect(jsonPath("$.error", is("Forbidden")));
+  }
+
+  @Test
   void return_ok_returns_keg() throws Exception {
     Keg keg = new Keg();
     keg.setId(5L);

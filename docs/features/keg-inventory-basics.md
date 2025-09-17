@@ -78,6 +78,7 @@ Acceptance Criteria
   - When POST `{base}/assign` with `kegId` and `venueId`
   - Then response is 200 with `status=DISTRIBUTED` and `assignedVenueId=venueId`
   - And a 403 is returned if the user’s brewery scope does not match either the keg or the venue
+  - And a 422 is returned if the keg is in an incompatible state (e.g., TAPPED/BLOWN)
 
 - Receive
   - Given a keg assigned to a venue (DISTRIBUTED)
@@ -90,6 +91,7 @@ Acceptance Criteria
   - When POST `{base}/move` with `fromVenueId=A` and `toVenueId=B`
   - Then response is 200 with `assignedVenueId=B` and `status=DISTRIBUTED` unless it was `RECEIVED`
   - And if `fromVenueId == toVenueId`, respond 422 with Problem JSON message
+  - And a 403 is returned if `toVenueId` belongs to a different brewery than the authenticated user
 
 - Return
   - Given a keg at a venue

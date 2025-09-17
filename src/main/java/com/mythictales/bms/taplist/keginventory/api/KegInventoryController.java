@@ -20,6 +20,11 @@ import com.mythictales.bms.taplist.keginventory.service.KegInventoryService;
 import com.mythictales.bms.taplist.security.CurrentUser;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -36,7 +41,21 @@ public class KegInventoryController {
 
   @PostMapping("/assign")
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN','BAR_ADMIN')")
-  @Operation(summary = "Assign a keg to a venue (status→DISTRIBUTED)")
+  @Operation(
+      summary = "Assign a keg to a venue (status→DISTRIBUTED)",
+      security = {@SecurityRequirement(name = "sessionCookie")})
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Assigned",
+        content =
+            @Content(
+                schema =
+                    @Schema(implementation = com.mythictales.bms.taplist.api.dto.KegDto.class))),
+    @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+    @ApiResponse(responseCode = "422", description = "Unsupported transition", content = @Content)
+  })
   public ResponseEntity<KegDto> assign(
       @AuthenticationPrincipal CurrentUser user, @RequestBody @Validated AssignRequest req) {
     var keg = service.assignToVenue(user, req.kegId(), req.venueId());
@@ -45,7 +64,20 @@ public class KegInventoryController {
 
   @PostMapping("/receive")
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN','BAR_ADMIN')")
-  @Operation(summary = "Receive a keg at a venue (status=RECEIVED)")
+  @Operation(
+      summary = "Receive a keg at a venue (status=RECEIVED)",
+      security = {@SecurityRequirement(name = "sessionCookie")})
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Received",
+        content =
+            @Content(
+                schema =
+                    @Schema(implementation = com.mythictales.bms.taplist.api.dto.KegDto.class))),
+    @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+  })
   public ResponseEntity<KegDto> receive(
       @AuthenticationPrincipal CurrentUser user, @RequestBody @Validated ReceiveRequest req) {
     var keg = service.receiveAtVenue(user, req.kegId(), req.venueId());
@@ -54,7 +86,21 @@ public class KegInventoryController {
 
   @PostMapping("/move")
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN','BAR_ADMIN')")
-  @Operation(summary = "Move a keg between venues (status→DISTRIBUTED unless RECEIVED)")
+  @Operation(
+      summary = "Move a keg between venues (status→DISTRIBUTED unless RECEIVED)",
+      security = {@SecurityRequirement(name = "sessionCookie")})
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Moved",
+        content =
+            @Content(
+                schema =
+                    @Schema(implementation = com.mythictales.bms.taplist.api.dto.KegDto.class))),
+    @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+    @ApiResponse(responseCode = "422", description = "Unsupported transition", content = @Content)
+  })
   public ResponseEntity<KegDto> move(
       @AuthenticationPrincipal CurrentUser user, @RequestBody @Validated MoveRequest req) {
     var keg = service.move(user, req.kegId(), req.fromVenueId(), req.toVenueId());
@@ -63,7 +109,19 @@ public class KegInventoryController {
 
   @PostMapping("/return")
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN','BAR_ADMIN')")
-  @Operation(summary = "Return a keg to brewery (status=EMPTY, clears assignment)")
+  @Operation(
+      summary = "Return a keg to brewery (status=EMPTY, clears assignment)",
+      security = {@SecurityRequirement(name = "sessionCookie")})
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Returned",
+        content =
+            @Content(
+                schema =
+                    @Schema(implementation = com.mythictales.bms.taplist.api.dto.KegDto.class))),
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+  })
   public ResponseEntity<KegDto> returnKeg(
       @AuthenticationPrincipal CurrentUser user, @RequestBody @Validated ReturnRequest req) {
     var keg = service.returnToBrewery(user, req.kegId());
