@@ -68,11 +68,26 @@ public class BeerApiController {
                             "{\"id\":1,\"name\":\"Pale Ale\",\"style\":\"American Pale Ale\",\"styleRefId\":42,\"abv\":5.5}")))
   })
   public ResponseEntity<BeerDto> linkStyle(
-      @PathVariable Long id, @RequestBody StyleLinkRequest req) {
+      @PathVariable Long id,
+      @RequestBody StyleLinkRequest req,
+      @org.springframework.security.core.annotation.AuthenticationPrincipal
+          com.mythictales.bms.taplist.security.CurrentUser user) {
     if (req == null || req.styleId == null) {
       throw new BusinessValidationException("styleId is required");
     }
     Beer b = beers.findById(id).orElseThrow(java.util.NoSuchElementException::new);
+    // Tenant scope: unless SITE_ADMIN, user's brewery must match beer.brewery
+    boolean siteAdmin =
+        user != null
+            && user.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SITE_ADMIN"));
+    if (!siteAdmin) {
+      Long userBrewery = user != null ? user.getBreweryId() : null;
+      Long beerBrewery = b.getBrewery() != null ? b.getBrewery().getId() : null;
+      if (userBrewery == null || beerBrewery == null || !userBrewery.equals(beerBrewery)) {
+        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant update forbidden");
+      }
+    }
     var style = styles.findById(req.styleId()).orElseThrow(java.util.NoSuchElementException::new);
     b.setStyleRef(style);
     beers.save(b);
@@ -89,8 +104,22 @@ public class BeerApiController {
           @Content(
               mediaType = "application/json",
               schema = @Schema(implementation = com.mythictales.bms.taplist.api.dto.BeerDto.class)))
-  public ResponseEntity<BeerDto> unlinkStyle(@PathVariable Long id) {
+  public ResponseEntity<BeerDto> unlinkStyle(
+      @PathVariable Long id,
+      @org.springframework.security.core.annotation.AuthenticationPrincipal
+          com.mythictales.bms.taplist.security.CurrentUser user) {
     Beer b = beers.findById(id).orElseThrow(java.util.NoSuchElementException::new);
+    boolean siteAdmin =
+        user != null
+            && user.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SITE_ADMIN"));
+    if (!siteAdmin) {
+      Long userBrewery = user != null ? user.getBreweryId() : null;
+      Long beerBrewery = b.getBrewery() != null ? b.getBrewery().getId() : null;
+      if (userBrewery == null || beerBrewery == null || !userBrewery.equals(beerBrewery)) {
+        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant update forbidden");
+      }
+    }
     b.setStyleRef(null);
     beers.save(b);
     return ResponseEntity.ok(ApiMappers.toDto(b));
