@@ -66,14 +66,22 @@
       <version>2.5.0</version>
     </dependency>
     <!-- Database migrations -->
+    <!-- Flyway core and PostgreSQL support -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
+      <version>11.12.0</version>
     </dependency>
-    <!-- Postgres JDBC driver -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>11.12.0</version>
+    </dependency>
+    <!-- PostgreSQL JDBC driver -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
+      <version>42.7.3</version>
       <scope>runtime</scope>
     </dependency>
     <!-- Mockito: rely on mockito-core via spring-boot-starter-test.

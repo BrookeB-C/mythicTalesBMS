@@ -14,6 +14,10 @@ import com.mythictales.bms.taplist.catalog.repo.BjcpStyleRepository;
 import com.mythictales.bms.taplist.catalog.service.StyleImportService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -29,7 +33,24 @@ public class BjcpStyleController {
   }
 
   @GetMapping
-  @Operation(summary = "List BJCP styles (server-side filters: year, q on code/name)")
+  @Operation(
+      summary = "List BJCP styles",
+      description =
+          "Server-side filters: `year` (guideline year), `q` (substring match on code or name).\n"
+              + "Pagination via `page,size,sort` (e.g., `sort=code,asc`).")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Paged styles",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "StylesPage",
+                        value =
+                            "{\n  \"content\": [{\n    \"id\": 101, \"code\": \"18B\", \"name\": \"American Pale Ale\", \"guidelineYear\": 2015\n  }],\n  \"pageable\": {\"pageNumber\":0,\"pageSize\":50},\n  \"totalElements\": 1, \"totalPages\": 1\n}")))
+  })
   public Page<BjcpStyle> list(
       @RequestParam(value = "year", required = false) Integer year,
       @RequestParam(value = "q", required = false) String q,
@@ -53,6 +74,17 @@ public class BjcpStyleController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Get BJCP style by id")
+  @ApiResponse(
+      responseCode = "200",
+      description = "Style",
+      content =
+          @Content(
+              mediaType = "application/json",
+              examples =
+                  @ExampleObject(
+                      value =
+                          "{\"id\":101,\"code\":\"18B\",\"name\":\"American Pale Ale\",\"guidelineYear\":2015}")))
   public ResponseEntity<BjcpStyle> get(@PathVariable Long id) {
     return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }

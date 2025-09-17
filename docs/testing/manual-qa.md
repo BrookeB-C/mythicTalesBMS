@@ -226,6 +226,13 @@ Use curl or Postman with session cookie established via login (or run `curl -u` 
 - **Expected**: 403 Forbidden.
   2. Repeat as `siteadmin` — expect 200 with list of users.
 
+### QA-API-06 — Import sample BeerXML recipes
+- **Precondition**: `brewadmin` session; sample files available under `docs/catalog/samples/`
+- **Steps**:
+  1. For each sample (`mythictales-citrus-ipa.xml`, `mythictales-midnight-stout.xml`, `mythictales-golden-pils.xml`), POST to `/api/v1/catalog/recipes/import` with multipart form fields `breweryId=<brewadmin brewery>` and `file=@<recipe>`. (Include CSRF token header `X-XSRF-TOKEN`.)
+  2. After each import, fetch `GET /api/v1/kegs?breweryId=<id>` or `GET /api/v1/catalog/recipes/{newId}` (when endpoint available) to confirm persistence, or verify via database.
+- **Expected**: Each upload returns 200 with response body listing created recipe IDs; duplicates return 409 unless re-run with `force=true`.
+
 ## Observability & Docs
 
 ### QA-DOCS-01 — Swagger UI available in dev

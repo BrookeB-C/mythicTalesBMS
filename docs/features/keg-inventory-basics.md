@@ -11,6 +11,8 @@ Operations
 - Receive — POST `{base}/receive` → Receive a keg at a venue (status=RECEIVED)
 - Move — POST `{base}/move` → Move a keg between venues (status→DISTRIBUTED unless RECEIVED)
 - Return — POST `{base}/return` → Return a keg to the brewery (status=EMPTY, clears assignment)
+- Assign External — POST `{base}/assignExternal` → Assign a keg to an external partner (status→DISTRIBUTED)
+- History — GET `{base}/history` → Paged movement history with filters (`kegId`, `toVenueId`)
 
 Requests
 - Assign
@@ -67,6 +69,8 @@ Curl Examples
 - Receive: `curl -X POST localhost:8080/api/v1/keg-inventory/receive -H 'Content-Type: application/json' -d @src/main/resources/samples/keg-inventory/receive.json`
 - Move: `curl -X POST localhost:8080/api/v1/keg-inventory/move -H 'Content-Type: application/json' -d @src/main/resources/samples/keg-inventory/move.json`
 - Return: `curl -X POST localhost:8080/api/v1/keg-inventory/return -H 'Content-Type: application/json' -d @src/main/resources/samples/keg-inventory/return.json`
+- Assign External: `curl -X POST localhost:8080/api/v1/keg-inventory/assignExternal -H 'Content-Type: application/json' -d '{"kegId":1,"partner":"Acme Distributor"}'`
+- History: `curl -s 'http://localhost:8080/api/v1/keg-inventory/history?kegId=1&size=5'`
 
 Notes
 - Endpoints require authenticated roles: `SITE_ADMIN`, `BREWERY_ADMIN`, `TAPROOM_ADMIN`, or `BAR_ADMIN`.
@@ -78,6 +82,7 @@ Acceptance Criteria
   - When POST `{base}/assign` with `kegId` and `venueId`
   - Then response is 200 with `status=DISTRIBUTED` and `assignedVenueId=venueId`
   - And a 403 is returned if the user’s brewery scope does not match either the keg or the venue
+  - And a 422 is returned if the keg is in an incompatible state (e.g., TAPPED/BLOWN)
 
 - Receive
   - Given a keg assigned to a venue (DISTRIBUTED)
@@ -90,6 +95,7 @@ Acceptance Criteria
   - When POST `{base}/move` with `fromVenueId=A` and `toVenueId=B`
   - Then response is 200 with `assignedVenueId=B` and `status=DISTRIBUTED` unless it was `RECEIVED`
   - And if `fromVenueId == toVenueId`, respond 422 with Problem JSON message
+  - And a 403 is returned if `toVenueId` belongs to a different brewery than the authenticated user
 
 - Return
   - Given a keg at a venue

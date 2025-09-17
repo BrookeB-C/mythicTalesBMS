@@ -16,10 +16,13 @@ import com.mythictales.bms.taplist.service.BusinessValidationException;
 public class KegInventoryService {
   private final KegRepository kegs;
   private final VenueRepository venues;
+  private final KegMovementRecorder movement;
 
-  public KegInventoryService(KegRepository kegs, VenueRepository venues) {
+  public KegInventoryService(
+      KegRepository kegs, VenueRepository venues, KegMovementRecorder movement) {
     this.kegs = kegs;
     this.venues = venues;
+    this.movement = movement;
   }
 
   private void ensureScope(CurrentUser user, Keg keg, Venue venue) {
@@ -45,6 +48,7 @@ public class KegInventoryService {
     Keg keg = kegs.findById(kegId).orElseThrow();
     Venue venue = venues.findById(venueId).orElseThrow();
     ensureScope(user, keg, venue);
+    Venue from = keg.getAssignedVenue();
     // Canonicalize to DISTRIBUTED
     if (keg.getStatus() == KegStatus.TAPPED)
       throw new BusinessValidationException("Cannot assign a tapped keg");
@@ -55,7 +59,9 @@ public class KegInventoryService {
     if (keg.getStatus() == KegStatus.CLEAN) keg.setStatus(KegStatus.FILLED);
     keg.setAssignedVenue(venue);
     keg.setStatus(KegStatus.DISTRIBUTED);
-    return kegs.save(keg);
+    Keg saved = kegs.save(keg);
+    movement.record(saved, from, venue, null, user);
+    return saved;
   }
 
   @Transactional
@@ -63,9 +69,12 @@ public class KegInventoryService {
     Keg keg = kegs.findById(kegId).orElseThrow();
     Venue venue = venues.findById(venueId).orElseThrow();
     ensureScope(user, keg, venue);
+    Venue from = keg.getAssignedVenue();
     keg.setAssignedVenue(venue);
     keg.setStatus(KegStatus.RECEIVED);
-    return kegs.save(keg);
+    Keg saved = kegs.save(keg);
+    movement.record(saved, from, venue, null, user);
+    return saved;
   }
 
   @Transactional
@@ -82,16 +91,40 @@ public class KegInventoryService {
       throw new BusinessValidationException("Cannot move a tapped keg");
     keg.setAssignedVenue(to);
     if (keg.getStatus() != KegStatus.RECEIVED) keg.setStatus(KegStatus.DISTRIBUTED);
-    return kegs.save(keg);
+    Keg saved = kegs.save(keg);
+    movement.record(saved, from, to, null, user);
+    return saved;
   }
 
   @Transactional
   public Keg returnToBrewery(CurrentUser user, Long kegId) {
     Keg keg = kegs.findById(kegId).orElseThrow();
     ensureScope(user, keg, null);
+    Venue from = keg.getAssignedVenue();
     keg.setAssignedVenue(null);
     keg.setStatus(KegStatus.EMPTY);
     if (keg.getSize() != null) keg.setRemainingOunces(keg.getSize().getOunces());
-    return kegs.save(keg);
+    Keg saved = kegs.save(keg);
+    movement.record(saved, from, null, null, user);
+    return saved;
+  }
+
+  @Transactional
+  public Keg assignToExternal(CurrentUser user, Long kegId, String externalPartner) {
+    Keg keg = kegs.findById(kegId).orElseThrow();
+    ensureScope(user, keg, null);
+    if (keg.getStatus() == KegStatus.TAPPED)
+      throw new BusinessValidationException("Cannot assign a tapped keg");
+    if (keg.getStatus() == KegStatus.BLOWN)
+      throw new BusinessValidationException("Cannot assign a blown keg");
+    if (keg.getStatus() == KegStatus.RETURNED) keg.setStatus(KegStatus.EMPTY);
+    if (keg.getStatus() == KegStatus.EMPTY) keg.setStatus(KegStatus.CLEAN);
+    if (keg.getStatus() == KegStatus.CLEAN) keg.setStatus(KegStatus.FILLED);
+    Venue from = keg.getAssignedVenue();
+    keg.setAssignedVenue(null);
+    keg.setStatus(KegStatus.DISTRIBUTED);
+    Keg saved = kegs.save(keg);
+    movement.record(saved, from, null, externalPartner, user);
+    return saved;
   }
 }
