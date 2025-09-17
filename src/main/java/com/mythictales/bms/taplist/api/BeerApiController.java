@@ -85,7 +85,8 @@ public class BeerApiController {
       Long userBrewery = user != null ? user.getBreweryId() : null;
       Long beerBrewery = b.getBrewery() != null ? b.getBrewery().getId() : null;
       if (userBrewery == null || beerBrewery == null || !userBrewery.equals(beerBrewery)) {
-        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant update forbidden");
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant update forbidden");
       }
     }
     var style = styles.findById(req.styleId()).orElseThrow(java.util.NoSuchElementException::new);
@@ -117,7 +118,8 @@ public class BeerApiController {
       Long userBrewery = user != null ? user.getBreweryId() : null;
       Long beerBrewery = b.getBrewery() != null ? b.getBrewery().getId() : null;
       if (userBrewery == null || beerBrewery == null || !userBrewery.equals(beerBrewery)) {
-        throw new org.springframework.security.access.AccessDeniedException("Cross-tenant update forbidden");
+        throw new org.springframework.security.access.AccessDeniedException(
+            "Cross-tenant update forbidden");
       }
     }
     b.setStyleRef(null);
