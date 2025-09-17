@@ -12,7 +12,7 @@ Operations
 - Move — POST `{base}/move` → Move a keg between venues (status→DISTRIBUTED unless RECEIVED)
 - Return — POST `{base}/return` → Return a keg to the brewery (status=EMPTY, clears assignment)
 - Assign External — POST `{base}/assignExternal` → Assign a keg to an external partner (status→DISTRIBUTED)
-- History — GET `{base}/history` → Paged movement history with filters (`kegId`, `toVenueId`)
+- History — GET `{base}/history` → Paged movement history with filters (`kegId`, `toVenueId`), optional time range `from`/`to` (ISO-8601)
 
 Requests
 - Assign
