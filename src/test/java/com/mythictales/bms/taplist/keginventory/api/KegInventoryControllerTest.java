@@ -31,7 +31,11 @@ class KegInventoryControllerTest extends BaseApiControllerTest {
   @BeforeEach
   void setUp() {
     service = Mockito.mock(KegInventoryService.class);
-    var controller = new KegInventoryController(service);
+    var controller =
+        new KegInventoryController(
+            service,
+            org.mockito.Mockito.mock(
+                com.mythictales.bms.taplist.keginventory.repo.KegMovementHistoryRepository.class));
     mvc = buildMvc(controller);
   }
 
