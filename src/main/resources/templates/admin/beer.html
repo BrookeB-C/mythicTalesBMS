@@ -18,6 +18,9 @@
         <option th:value="2021" th:selected="${year == 2021}">2021</option>
       </select>
     </label>
+    <label style="margin-left:.5rem">Search Beers
+      <input type="text" name="q" placeholder="beer name…" th:value="${q}"/>
+    </label>
     <button class="btn" type="submit">Apply</button>
   </form>
 
@@ -27,6 +30,7 @@
       <th>Name</th>
       <th>Current Style (text)</th>
       <th>BJCP Style</th>
+      <th>Linked</th>
       <th>Action</th>
     </tr>
     </thead>
@@ -50,6 +54,14 @@
       </td>
       <td>
         <span th:if="${b.styleRef != null}" th:text="${b.styleRef.code + ' — ' + b.styleRef.name}">18B — APA</span>
+        <span th:if="${b.styleRef == null}">-</span>
+      </td>
+      <td class="actions">
+        <form th:if="${b.styleRef != null}" method="post" th:action="@{'/admin/beer/' + ${b.id} + '/style/unlink'}" class="inline">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="hidden" name="year" th:value="${year}"/>
+          <button class="btn danger" type="submit">Unlink</button>
+        </form>
       </td>
     </tr>
     </tbody>
