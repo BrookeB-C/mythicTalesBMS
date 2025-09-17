@@ -11,6 +11,8 @@ Operations
 - Receive — POST `{base}/receive` → Receive a keg at a venue (status=RECEIVED)
 - Move — POST `{base}/move` → Move a keg between venues (status→DISTRIBUTED unless RECEIVED)
 - Return — POST `{base}/return` → Return a keg to the brewery (status=EMPTY, clears assignment)
+- Assign External — POST `{base}/assignExternal` → Assign a keg to an external partner (status→DISTRIBUTED)
+- History — GET `{base}/history` → Paged movement history with filters (`kegId`, `toVenueId`)
 
 Requests
 - Assign
@@ -67,6 +69,8 @@ Curl Examples
 - Receive: `curl -X POST localhost:8080/api/v1/keg-inventory/receive -H 'Content-Type: application/json' -d @src/main/resources/samples/keg-inventory/receive.json`
 - Move: `curl -X POST localhost:8080/api/v1/keg-inventory/move -H 'Content-Type: application/json' -d @src/main/resources/samples/keg-inventory/move.json`
 - Return: `curl -X POST localhost:8080/api/v1/keg-inventory/return -H 'Content-Type: application/json' -d @src/main/resources/samples/keg-inventory/return.json`
+- Assign External: `curl -X POST localhost:8080/api/v1/keg-inventory/assignExternal -H 'Content-Type: application/json' -d '{"kegId":1,"partner":"Acme Distributor"}'`
+- History: `curl -s 'http://localhost:8080/api/v1/keg-inventory/history?kegId=1&size=5'`
 
 Notes
 - Endpoints require authenticated roles: `SITE_ADMIN`, `BREWERY_ADMIN`, `TAPROOM_ADMIN`, or `BAR_ADMIN`.

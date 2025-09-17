@@ -175,4 +175,45 @@ class KegInventoryControllerIT {
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.status", is(403)));
   }
+
+  @Test
+  void history_returns_entries_after_moves() throws Exception {
+    Brewery stone = breweries.findAll().stream().findFirst().orElseThrow();
+    Venue venue =
+        venues
+            .findFirstByBreweryIdAndType(stone.getId(), VenueType.TAPROOM)
+            .orElseThrow(() -> new RuntimeException("no venue"));
+    Keg keg =
+        kegs
+            .findByBreweryIdAndAssignedVenueIsNullAndStatus(stone.getId(), KegStatus.FILLED)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no FILLED unassigned keg"));
+
+    // Assign and Receive to generate history rows
+    mvc.perform(
+            post("/api/v1/keg-inventory/assign")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(new AssignRequest(keg.getId(), venue.getId()))))
+        .andExpect(status().isOk());
+    mvc.perform(
+            post("/api/v1/keg-inventory/receive")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(new ReceiveRequest(keg.getId(), venue.getId()))))
+        .andExpect(status().isOk());
+
+    // Query history by kegId
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/v1/keg-inventory/history")
+                .with(user(principalFor(stone)))
+                .param("kegId", String.valueOf(keg.getId()))
+                .param("size", "5"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].kegId", is(keg.getId().intValue())));
+  }
 }
