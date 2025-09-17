@@ -13,8 +13,27 @@ spring:
   h2:
     console:
       enabled: false
+  kafka:
+    bootstrap-servers: ${BMS_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    client-id: taplist-prod
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 5
+      properties:
+        delivery.timeout.ms: 120000
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        spring.json.add.type.headers: false
+    properties:
+      security.protocol: PLAINTEXT
 
 springdoc:
   swagger-ui:
     enabled: false
 
+bms:
+  kafka:
+    enabled: ${BMS_KAFKA_ENABLED:false}
+    retention: P7D

@@ -51,7 +51,10 @@ public class RecipeImportControllerTest {
     when(service.importXml(eq(9L), any(String.class), eq(false))).thenReturn(List.of(1L, 2L));
     MockMultipartFile f =
         new MockMultipartFile(
-            "file", "r.xml", "application/xml", "<RECIPES></RECIPES>".getBytes(StandardCharsets.UTF_8));
+            "file",
+            "r.xml",
+            "application/xml",
+            "<RECIPES></RECIPES>".getBytes(StandardCharsets.UTF_8));
     mvc.perform(
             multipart("/api/v1/catalog/recipes/import")
                 .file(f)
@@ -68,7 +71,10 @@ public class RecipeImportControllerTest {
         .thenThrow(new RecipeImportService.DuplicateRecipeException(99L));
     MockMultipartFile f =
         new MockMultipartFile(
-            "file", "r.xml", "application/xml", "<RECIPES><RECIPE/></RECIPES>".getBytes(StandardCharsets.UTF_8));
+            "file",
+            "r.xml",
+            "application/xml",
+            "<RECIPES><RECIPE/></RECIPES>".getBytes(StandardCharsets.UTF_8));
     mvc.perform(
             multipart("/api/v1/catalog/recipes/import")
                 .file(f)
@@ -79,4 +85,3 @@ public class RecipeImportControllerTest {
         .andExpect(content().contentType("application/problem+json"));
   }
 }
-
