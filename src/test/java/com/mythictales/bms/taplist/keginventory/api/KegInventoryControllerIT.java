@@ -102,4 +102,77 @@ class KegInventoryControllerIT {
         .andExpect(jsonPath("$.assignedVenueId").doesNotExist())
         .andExpect(jsonPath("$.status", is("EMPTY")));
   }
+
+  @Test
+  void move_same_venue_yields_422() throws Exception {
+    Brewery stone =
+        breweries.findAll().stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no brewery"));
+    Venue venue =
+        venues
+            .findFirstByBreweryIdAndType(stone.getId(), VenueType.TAPROOM)
+            .orElseThrow(() -> new RuntimeException("no venue"));
+    Keg keg =
+        kegs
+            .findByBreweryIdAndAssignedVenueIsNullAndStatus(stone.getId(), KegStatus.FILLED)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no FILLED unassigned keg"));
+
+    // Assign first to ensure it's at venue
+    String assignBody = om.writeValueAsString(new AssignRequest(keg.getId(), venue.getId()));
+    mvc.perform(
+            post("/api/v1/keg-inventory/assign")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(assignBody))
+        .andExpect(status().isOk());
+
+    // Move with same from/to must 422
+    String moveBody =
+        om.writeValueAsString(
+            new com.mythictales.bms.taplist.keginventory.api.dto.MoveRequest(
+                keg.getId(), venue.getId(), venue.getId()));
+    mvc.perform(
+            post("/api/v1/keg-inventory/move")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(moveBody))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.status", is(422)));
+  }
+
+  @Test
+  void assign_forbidden_when_wrong_brewery() throws Exception {
+    // Seed a different brewery for scope mismatch
+    Brewery other = breweries.save(new Brewery("Other Brewery"));
+    Brewery stone =
+        breweries.findAll().stream()
+            .filter(b -> !b.getId().equals(other.getId()))
+            .findFirst()
+            .orElseThrow();
+    Venue venue =
+        venues
+            .findFirstByBreweryIdAndType(stone.getId(), VenueType.TAPROOM)
+            .orElseThrow(() -> new RuntimeException("no venue"));
+    Keg keg =
+        kegs
+            .findByBreweryIdAndAssignedVenueIsNullAndStatus(stone.getId(), KegStatus.FILLED)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no FILLED unassigned keg"));
+
+    String body = om.writeValueAsString(new AssignRequest(keg.getId(), venue.getId()));
+    mvc.perform(
+            post("/api/v1/keg-inventory/assign")
+                .with(user(principalFor(other)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.status", is(403)));
+  }
 }
