@@ -28,6 +28,8 @@
     <a th:classappend="${(tab == 'users') ? ' active' : ''}"
        th:href="@{/admin/brewery(tab='users')}">Users</a>
     <a th:href="@{/admin/beer}">Beers</a>
+    <a th:classappend="${(tab == 'catalog') ? ' active' : ''}"
+       th:href="@{/admin/brewery(tab='catalog')}">Catalog</a>
   </div>
 
   <section th:if="${tab == null or tab == 'taprooms'}">
@@ -86,16 +88,22 @@
     <tbody>
       <tr th:each="k : ${kegs}">
         <td th:text="${k.serialNumber}">SER-001</td>
-        <td th:text="${k.beer.name}">Beer</td>
+        <td th:text="${k.beer != null ? k.beer.name : '-'}">Beer</td>
         <td th:text="${k.size}">HALF_BARREL</td>
         <td>
-          <span class="badge" th:text="${k.status}"
-                th:classappend="${(k.status == T(com.mythictales.bms.taplist.domain.KegStatus).FILLED) ? ' green' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
-                                (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))}">
-          </span>
+          <th:block th:switch="${k.status}">
+            <span class="badge green" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).FILLED}"
+                  th:text="${k.status}"></span>
+            <span class="badge blue" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED}"
+                  th:text="${k.status}"></span>
+            <span class="badge purple" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED}"
+                  th:text="${k.status}"></span>
+            <span class="badge orange" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED}"
+                  th:text="${k.status}"></span>
+            <span class="badge red" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN}"
+                  th:text="${k.status}"></span>
+            <span class="badge gray" th:case="*" th:text="${k.status}"></span>
+          </th:block>
         </td>
         <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>
         <td>
@@ -179,16 +187,22 @@
       <tbody>
         <tr th:each="k : ${assignedKegs}">
           <td th:text="${k.serialNumber}">SER-020</td>
-          <td th:text="${k.beer.name}">Beer</td>
+          <td th:text="${k.beer != null ? k.beer.name : '-'}">Beer</td>
           <td th:text="${k.size}">SIXTEL</td>
           <td>
-            <span class="badge" th:text="${k.status}"
-                  th:classappend="${(k.status == T(com.mythictales.bms.taplist.domain.KegStatus).FILLED) ? ' green' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))}">
-            </span>
+            <th:block th:switch="${k.status}">
+              <span class="badge green" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).FILLED}"
+                    th:text="${k.status}"></span>
+              <span class="badge blue" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED}"
+                    th:text="${k.status}"></span>
+              <span class="badge purple" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED}"
+                    th:text="${k.status}"></span>
+              <span class="badge orange" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED}"
+                    th:text="${k.status}"></span>
+              <span class="badge red" th:case="${T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN}"
+                    th:text="${k.status}"></span>
+              <span class="badge gray" th:case="*" th:text="${k.status}"></span>
+            </th:block>
           </td>
           <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>
           <td>
@@ -213,7 +227,7 @@
       <tbody>
         <tr th:each="k : ${returnedKegs}">
           <td th:text="${k.serialNumber}">SER-100</td>
-          <td th:text="${k.beer.name}">Beer</td>
+          <td th:text="${k.beer != null ? k.beer.name : '-'}">Beer</td>
           <td th:text="${k.size}">SIXTEL</td>
           <td th:text="${k.status}">RETURNED</td>
           <td>
@@ -221,6 +235,45 @@
               <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
               <button class="btn" type="submit">Reset to Empty</button>
             </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section th:if="${tab == 'catalog'}">
+    <h2>Catalog</h2>
+    <div style="display:flex; gap: .75rem; align-items:center; margin-bottom:.75rem; flex-wrap: wrap;">
+      <a class="btn ghost" th:href="@{/admin/beer}">Link BJCP Styles</a>
+      <form method="post" enctype="multipart/form-data" th:action="@{/api/v1/catalog/recipes/import}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="hidden" name="breweryId" th:value="${brewery != null ? brewery.id : ''}"/>
+        <label class="inline">Import Recipe XML
+          <input type="file" name="file" accept=".xml" required />
+        </label>
+        <label class="inline" style="margin-left:.5rem">
+          <input type="checkbox" name="force"/> overwrite duplicates
+        </label>
+        <button class="btn" type="submit">Import Recipe</button>
+      </form>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Style</th>
+          <th>ABV</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="b : ${catalogBeers}">
+          <td th:text="${b.name}">Beer</td>
+          <td th:text="${b.style}">Style</td>
+          <td th:text="${#numbers.formatDecimal(b.abv, 1, 1)} + '%'">5.5%</td>
+          <td class="actions">
+            <a class="btn" th:href="@{'/admin/catalog/recipes'(q=${b.name})}">Edit Recipe</a>
           </td>
         </tr>
       </tbody>

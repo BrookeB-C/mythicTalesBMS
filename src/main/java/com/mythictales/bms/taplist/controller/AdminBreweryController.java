@@ -158,6 +158,26 @@ public class AdminBreweryController {
       List<Keg> returned = kegs.findByBreweryIdAndStatus(user.getBreweryId(), KegStatus.RETURNED);
       model.addAttribute("returnedKegs", returned);
 
+      // Catalog tab: list current beers for this brewery (unique by beer id from brewery kegs)
+      java.util.List<Beer> catalogBeers = new java.util.ArrayList<>();
+      java.util.Set<Long> seenBeerIds = new java.util.LinkedHashSet<>();
+      for (Keg k : kegs.findByBreweryId(user.getBreweryId())) {
+        if (k.getBeer() != null
+            && k.getBeer().getId() != null
+            && seenBeerIds.add(k.getBeer().getId())) {
+          catalogBeers.add(k.getBeer());
+        }
+      }
+      // Fallback: if none found via kegs, include all beers owned by this brewery (if linked)
+      if (catalogBeers.isEmpty()) {
+        for (Beer b : beers.findAll()) {
+          if (b.getBrewery() != null && user.getBreweryId().equals(b.getBrewery().getId())) {
+            if (b.getId() != null && seenBeerIds.add(b.getId())) catalogBeers.add(b);
+          }
+        }
+      }
+      model.addAttribute("catalogBeers", catalogBeers);
+
       // Users for this brewery (direct brewery users + those on taps/bars belonging to the brewery)
       java.util.Set<com.mythictales.bms.taplist.domain.UserAccount> userSet =
           new java.util.LinkedHashSet<>();

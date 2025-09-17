@@ -8,7 +8,14 @@ public final class ApiMappers {
 
   public static BeerDto toDto(Beer b) {
     if (b == null) return null;
-    return new BeerDto(b.getId(), b.getName(), b.getStyle(), b.getAbv());
+    return new BeerDto(
+        b.getId(),
+        b.getName(),
+        b.getStyle(),
+        b.getStyleRef() != null ? b.getStyleRef().getId() : null,
+        b.getAbv(),
+        b.getBrewery() != null ? b.getBrewery().getId() : null,
+        b.getBreweryName());
   }
 
   public static KegSizeSpecDto toDto(KegSizeSpec s) {

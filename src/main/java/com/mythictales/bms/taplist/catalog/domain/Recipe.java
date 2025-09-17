@@ -201,4 +201,25 @@ public class Recipe {
   public void setBrewery(Brewery brewery) {
     this.brewery = brewery;
   }
+
+  // Child collections accessors
+  public List<RecipeFermentable> getFermentables() {
+    return fermentables;
+  }
+
+  public List<RecipeHop> getHops() {
+    return hops;
+  }
+
+  public List<RecipeYeast> getYeasts() {
+    return yeasts;
+  }
+
+  public List<RecipeMisc> getMiscs() {
+    return miscs;
+  }
+
+  public List<MashStep> getMashSteps() {
+    return mashSteps;
+  }
 }

@@ -16,7 +16,7 @@ public class Keg {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = true)
   private Beer beer;
 
   @ManyToOne(optional = false)
