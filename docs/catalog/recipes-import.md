@@ -73,15 +73,51 @@ Mash Steps → `mash_step`
   - Dedup via `source_hash`; returns 409 Conflict Problem JSON if duplicate and `force=false`
   - Persists `Recipe` + children; returns created ids: `{ "ids": [1,2,...] }`
 
+### Examples
+
+Import a BeerXML file (breweryId 9):
+
+```
+curl -X POST "http://localhost:8080/api/v1/catalog/recipes/import" \
+  -H "Authorization: Bearer <token>" \
+  -F breweryId=9 \
+  -F force=false \
+  -F file=@/path/to/recipe.xml;type=application/xml
+```
+
+Duplicate (force=false) response (409):
+
+```
+{
+  "status": 409,
+  "error": "Conflict",
+  "message": "Duplicate recipe",
+  "details": { "existingId": 123 },
+  "timestamp": "2025-09-17T12:34:56Z"
+}
+```
+
 ## Read API
 - `GET /api/v1/catalog/recipes?breweryId={id}&page=&size=&sort=`
   - Paged recipes for a brewery; tenant‑scoped
 - `GET /api/v1/catalog/recipes/{id}`
   - Returns a `Recipe` with child components; tenant‑scoped
 
+### Examples
+
+List recipes (page 0, size 20):
+
+```
+curl "http://localhost:8080/api/v1/catalog/recipes?breweryId=9&page=0&size=20&sort=createdAt,desc"
+```
+
 ## Idempotency & Dedup
 - Importers compute `source_hash` from normalized XML (trimmed, comments removed) to detect duplicates.
 - If a duplicate is detected and `force=false`, responds 409 Conflict (Problem JSON) with `details.existingId`.
+
+## Swagger
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
 
 ## Future Enhancements
 - Profiles as first‑class: style/equipment/mash profiles normalized into separate tables
