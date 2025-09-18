@@ -30,6 +30,13 @@
   - `bms.kafka.sample.facility-id`
   - `bms.kafka.sample.venue-id`
 
+## Taproom Domain Events
+
+- `TapService` emits taproom lifecycle events to `taproom.events.v1` when keg activity occurs.
+- Event types: `KegTapped`, `BeerPoured`, `KegBlown`, `KegUntapped`.
+- Payload fields include tap/taproom/venue identifiers, keg/beer metadata, actor details, and pour ounces when applicable.
+- Headers follow the global contract (`breweryId`, `facilityId` = taproom, `venueId`, `eventType`, `occurredAt`, `traceId`).
+
 ## Local Development
 
 1. Start Kafka stack: `docker compose -f docker/compose/kafka-dev.yml up -d`
@@ -53,4 +60,3 @@
 
 - `DomainEventPublisherIT` (Testcontainers Kafka) verifies publish headers and payload contracts
 - Unit coverage should validate metadata helpers (`partitionKey`, trace ID resolution) as additional publishers emerge
-
