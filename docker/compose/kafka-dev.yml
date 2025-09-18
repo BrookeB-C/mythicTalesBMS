@@ -37,7 +37,7 @@ services:
     command: >-
       set -euo pipefail
       BROKER=kafka:9092
-      create() { kafka-topics.sh --bootstrap-server "$BROKER" --create --if-not-exists --topic "$1" --partitions 6 --replication-factor 1; }
+      create() { kafka-topics.sh --bootstrap-server "$$BROKER" --create --if-not-exists --topic "$$1" --partitions 6 --replication-factor 1; }
       for topic in \
         prodinventory.events.v1 \
         keginventory.events.v1 \
@@ -51,9 +51,9 @@ services:
         billing.events.v1 \
         compliance.events.v1 \
         iam.events.v1; do
-        create "$topic"
+        create "$$topic"
       done
-      kafka-topics.sh --bootstrap-server "$BROKER" --list
+      kafka-topics.sh --bootstrap-server "$$BROKER" --list
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
