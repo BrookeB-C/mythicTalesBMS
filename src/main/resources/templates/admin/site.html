@@ -13,6 +13,9 @@
       <p>
         <a class="btn" th:href="@{/admin/users}">Manage Users</a>
       </p>
+      <p>
+        <a class="btn" th:href="@{/admin/site/events}">View Taproom Events</a>
+      </p>
       <h2>Breweries</h2>
       <ul>
         <li th:each="b : ${breweries}" th:text="${b.name}">Brewery</li>

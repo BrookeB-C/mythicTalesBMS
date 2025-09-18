@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Taproom Events</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}" />
+  </head>
+  <body>
+    <header>
+      <h1>Taproom Events</h1>
+      <p><a class="btn" th:href="@{/admin/site}">⟵ Back to Site Admin</a></p>
+    </header>
+    <main>
+      <section class="filters">
+        <form method="get" class="filter-form">
+          <label for="breweryId">Brewery</label>
+          <select id="breweryId" name="breweryId" onchange="this.form.submit()">
+            <option th:value="" th:selected="${selectedBreweryId == null}">All Breweries</option>
+            <option
+              th:each="brewery : ${breweries}"
+              th:value="${brewery.id}"
+              th:text="${brewery.name}"
+              th:selected="${selectedBreweryId != null and brewery.id == selectedBreweryId}">
+              Brewery
+            </option>
+          </select>
+
+          <label for="taproomId">Taproom</label>
+          <select id="taproomId" name="taproomId" onchange="this.form.submit()">
+            <option th:value="" th:selected="${selectedTaproomId == null}">All Taprooms</option>
+            <option
+              th:each="taproom : ${taprooms}"
+              th:value="${taproom.id}"
+              th:text="${taproom.name}"
+              th:selected="${selectedTaproomId != null and taproom.id == selectedTaproomId}">
+              Taproom
+            </option>
+          </select>
+          <noscript>
+            <button type="submit">Filter</button>
+          </noscript>
+        </form>
+      </section>
+
+      <section class="events">
+        <p th:if="${events.content.isEmpty()}">No events match the selected filters.</p>
+        <table th:if="${!events.content.isEmpty()}">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Event</th>
+              <th>Brewery</th>
+              <th>Taproom</th>
+              <th>Tap #</th>
+              <th>Beer</th>
+              <th>Ounces</th>
+              <th>Actor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="event : ${events.content}">
+              <td th:text="${#temporals.format(event.atTime, 'yyyy-MM-dd HH:mm')}"></td>
+              <td th:text="${event.type}"></td>
+              <td
+                th:text="${event.placement.tap.taproom != null ? event.placement.tap.taproom.brewery.name : '—'}"></td>
+              <td th:text="${event.placement.tap.taproom != null ? event.placement.tap.taproom.name : '—'}"></td>
+              <td th:text="${event.placement.tap.number}"></td>
+              <td
+                th:text="${event.placement.keg.beer != null ? event.placement.keg.beer.name : 'Unassigned'}"></td>
+              <td th:text="${event.ounces != null ? #numbers.formatDecimal(event.ounces, 1, 1) : '—'}"></td>
+              <td th:text="${event.actor != null ? event.actor.username : 'system'}"></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination" th:if="${!events.content.isEmpty()}">
+          <a
+            th:if="${previousPage != null}"
+            th:href="@{/admin/site/events(page=${previousPage},breweryId=${selectedBreweryId},taproomId=${selectedTaproomId})}"
+            class="btn">Previous</a>
+          <span>
+            Page <span th:text="${events.number + 1}"></span> of
+            <span th:text="${events.totalPages == 0 ? 1 : events.totalPages}"></span>
+          </span>
+          <a
+            th:if="${nextPage != null}"
+            th:href="@{/admin/site/events(page=${nextPage},breweryId=${selectedBreweryId},taproomId=${selectedTaproomId})}"
+            class="btn">Next</a>
+        </div>
+      </section>
+    </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+  </body>
+</html>
