@@ -199,6 +199,19 @@ Use curl or Postman with session cookie established via login (or run `curl -u` 
   1. `GET /api/v1/taps`
 - **Expected**: 200 with JSON page containing only taps for taproom `tapadmin` manages; includes `fillPercent` and `keg` details.
 
+### QA-API-02 — Keg Inventory endpoints (history, reconciliation, counts)
+- **Precondition**: Authenticate as `brewadmin` (or stone_brewadmin in staging); reuse session cookie
+- **Steps**:
+  1. `GET /api/v1/keg-inventory/history?size=5` (optional: add `&from=2025-09-16T00:00:00Z&to=2025-09-17T00:00:00Z`)
+  2. `GET /api/v1/keg-inventory/reports/statusCounts`
+  3. `GET /api/v1/keg-inventory/reconciliation`
+- **Expected**: 200 for each; history returns a page object; counts object has `counts` map; reconciliation returns a JSON array with zero or more anomaly objects.
+
+Curl session cookie flow
+1) `curl -c cookies.txt http://localhost:8080/login`
+2) `curl -c cookies.txt -b cookies.txt -L -X POST http://localhost:8080/login -H 'Content-Type: application/x-www-form-urlencoded' --data 'username=brewadmin&password=password'`
+3) `curl -b cookies.txt 'http://localhost:8080/api/v1/keg-inventory/history?size=5'`
+
 ### QA-API-02 — Pour tap via API
 - **Precondition**: Identify a tap ID from QA-API-01
 - **Steps**:
