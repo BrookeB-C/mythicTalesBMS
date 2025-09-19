@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/app :: layout('Brewery Operations', 'brewery', 'Coordinate taprooms, kegs, and distribution for this brewery.', ~{::section[@id='page-content']})}">
+      th:replace="~{layouts/app :: layout('Brewery Control Center', 'brewery', 'Quick overview and navigation for brewery operations.', ~{::section[@id='page-content']})}">
 <section id="page-content">
   <section class="page-section">
     <div class="card-grid">
@@ -11,6 +11,7 @@
         </header>
         <div class="metric-value" th:text="${taproomCount}">0</div>
         <footer class="muted">Taprooms linked to this brewery.</footer>
+      <a class="card-link" th:href="@{/admin/brewery(tab='taprooms')}">View taprooms →</a>
       </article>
       <article class="metric-card">
         <header>
@@ -19,6 +20,7 @@
         </header>
         <div class="metric-value" th:text="${activeTapHandles}">0</div>
         <footer class="muted">Live draft lines reporting a keg.</footer>
+      <a class="card-link" th:href="@{/admin/brewery(tab='taprooms')}">Manage taprooms →</a>
       </article>
       <article class="metric-card">
         <header>
@@ -27,6 +29,7 @@
         </header>
         <div class="metric-value" th:text="${availableKegCount}">0</div>
         <footer class="muted">Unassigned, brewery-controlled inventory.</footer>
+      <a class="card-link" th:href="@{/admin/brewery(tab='kegs')}">View kegs →</a>
       </article>
       <article class="metric-card">
         <header>
@@ -35,6 +38,7 @@
         </header>
         <div class="metric-value" th:text="${returnedKegCount}">0</div>
         <footer class="muted">Returned kegs ready for cleaning.</footer>
+      <a class="card-link" th:href="@{/admin/brewery(tab='assigned')}">Track distribution →</a>
       </article>
       <article class="metric-card">
         <header>
@@ -43,6 +47,7 @@
         </header>
         <div class="metric-value" th:text="${breweryUserCount}">0</div>
         <footer class="muted">Users scoped to this brewery &amp; venues.</footer>
+      <a class="card-link" th:href="@{/admin/brewery(tab='users')}">Manage team →</a>
       </article>
     </div>
   </section>
@@ -51,10 +56,7 @@
     <div class="section-heading">
       <div>
         <h2 th:text="${brewery != null ? brewery.name : 'Brewery'}">Brewery</h2>
-        <p class="muted">Update core details and switch between operational tabs.</p>
-      </div>
-      <div class="actions">
-        <a class="btn ghost" th:href="@{/admin/site}">Back to control center</a>
+        <p class="muted">Update your brewery details. Use the links on the left to dive deeper.</p>
       </div>
     </div>
 
@@ -69,23 +71,17 @@
       </div>
     </form>
 
-    <div class="tabs">
-      <a th:href="@{/admin/brewery(tab='taprooms')}"
-         th:classappend="${tab == null or tab == 'taprooms'} ? ' active' : ''">Taprooms</a>
-      <a th:href="@{/admin/brewery(tab='kegs')}"
-         th:classappend="${tab == 'kegs'} ? ' active' : ''">Kegs</a>
-      <a th:href="@{/admin/brewery(tab='assigned')}"
-         th:classappend="${tab == 'assigned'} ? ' active' : ''">Assigned</a>
-      <a th:href="@{/admin/brewery(tab='returned')}"
-         th:classappend="${tab == 'returned'} ? ' active' : ''">Returned</a>
-      <a th:href="@{/admin/brewery(tab='users')}"
-         th:classappend="${tab == 'users'} ? ' active' : ''">Users</a>
-      <a th:href="@{/admin/brewery(tab='catalog')}"
-         th:classappend="${tab == 'catalog'} ? ' active' : ''">Catalog</a>
+    <div class="control-links">
+      <a th:href="@{/admin/brewery(tab='taprooms')}" class="control-link" th:classappend="${tab == 'taprooms'} ? ' active' : ''">Taproom list</a>
+      <a th:href="@{/admin/brewery(tab='kegs')}" class="control-link" th:classappend="${tab == 'kegs'} ? ' active' : ''">Brewery kegs</a>
+      <a th:href="@{/admin/brewery(tab='assigned')}" class="control-link" th:classappend="${tab == 'assigned'} ? ' active' : ''">Assigned to venues</a>
+      <a th:href="@{/admin/brewery(tab='returned')}" class="control-link" th:classappend="${tab == 'returned'} ? ' active' : ''">Returned inventory</a>
+      <a th:href="@{/admin/brewery(tab='users')}" class="control-link" th:classappend="${tab == 'users'} ? ' active' : ''">Team members</a>
+      <a th:href="@{/admin/brewery(tab='catalog')}" class="control-link" th:classappend="${tab == 'catalog'} ? ' active' : ''">Brewery catalog</a>
     </div>
   </section>
 
-  <section class="page-section" th:if="${tab == null or tab == 'taprooms'}">
+  <section class="page-section" th:if="${tab == 'taprooms'}">
     <div class="section-heading">
       <div>
         <h3>Taproom coverage</h3>

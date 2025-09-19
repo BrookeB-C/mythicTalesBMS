@@ -767,3 +767,50 @@ textarea:focus {
     padding: 1rem 1.5rem;
   }
 }
+
+.control-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.control-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-200);
+  color: var(--color-text-600);
+  background: #fff;
+  font-weight: 600;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.control-link:hover {
+  background: rgba(46, 90, 172, 0.08);
+  color: var(--color-primary-500);
+  border-color: var(--color-primary-500);
+}
+
+.control-link.active {
+  color: var(--color-primary-500);
+  border-color: var(--color-primary-500);
+  background: rgba(46, 90, 172, 0.12);
+}
+
+.metric-card .card-link {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-primary-500);
+  font-weight: 600;
+}
+
+.metric-card .card-link::after {
+  content: '→';
+  font-size: 0.9rem;
+}
