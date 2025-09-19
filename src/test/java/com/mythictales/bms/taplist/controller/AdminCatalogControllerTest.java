@@ -1,14 +1,17 @@
 package com.mythictales.bms.taplist.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -115,7 +118,8 @@ public class AdminCatalogControllerTest {
             "recipe.xml",
             "application/xml",
             "<RECIPES></RECIPES>".getBytes(StandardCharsets.UTF_8));
-    when(importer.importXml(eq(42L), anyString(), eq(false))).thenReturn(java.util.List.of(11L));
+    when(importer.importFile(eq(42L), any(byte[].class), any(), eq(false)))
+        .thenReturn(java.util.List.of(11L));
 
     RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
 
@@ -126,7 +130,7 @@ public class AdminCatalogControllerTest {
         1, redirect.getFlashAttributes().get("importSuccessCount"));
     org.junit.jupiter.api.Assertions.assertEquals(
         false, redirect.getFlashAttributes().get("importForce"));
-    verify(importer).importXml(eq(42L), anyString(), eq(false));
+    verify(importer).importFile(eq(42L), any(byte[].class), any(), eq(false));
   }
 
   @Test
@@ -138,7 +142,7 @@ public class AdminCatalogControllerTest {
 
     doThrow(new DuplicateRecipeException(7L))
         .when(importer)
-        .importXml(eq(42L), anyString(), eq(false));
+        .importFile(eq(42L), any(byte[].class), any(), eq(false));
 
     RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
 
@@ -151,6 +155,27 @@ public class AdminCatalogControllerTest {
         redirect.getFlashAttributes().containsKey("importError"));
     org.junit.jupiter.api.Assertions.assertEquals(
         false, redirect.getFlashAttributes().get("importForce"));
+  }
+
+  @Test
+  void importRecipes_acceptsBeerSmithArchive() throws Exception {
+    AdminCatalogController controller = new AdminCatalogController(repo, importer);
+    byte[] zipped = createZip("recipes.xml", "<RECIPES><RECIPE/></RECIPES>");
+    MockMultipartFile file =
+        new MockMultipartFile("file", "beer.bsmx", "application/x-zip-compressed", zipped);
+    when(importer.importFile(eq(42L), any(byte[].class), any(), eq(true)))
+        .thenReturn(java.util.List.of(21L));
+
+    RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
+
+    String view = controller.importRecipes(dummyUser(), file, true, redirect);
+
+    org.junit.jupiter.api.Assertions.assertEquals("redirect:/admin/catalog/recipes", view);
+    org.junit.jupiter.api.Assertions.assertEquals(
+        1, redirect.getFlashAttributes().get("importSuccessCount"));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        true, redirect.getFlashAttributes().get("importForce"));
+    verify(importer).importFile(eq(42L), any(byte[].class), any(), eq(true));
   }
 
   private com.mythictales.bms.taplist.security.CurrentUser dummyUser() {
@@ -170,5 +195,15 @@ public class AdminCatalogControllerTest {
         new com.mythictales.bms.taplist.security.CurrentUser(ua);
     org.junit.jupiter.api.Assertions.assertNotNull(cu.getBreweryId());
     return cu;
+  }
+
+  private static byte[] createZip(String entryName, String contents) throws Exception {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(out)) {
+      zos.putNextEntry(new ZipEntry(entryName));
+      zos.write(contents.getBytes(StandardCharsets.UTF_8));
+      zos.closeEntry();
+    }
+    return out.toByteArray();
   }
 }
