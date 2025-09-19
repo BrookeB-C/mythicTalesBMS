@@ -191,7 +191,7 @@
                                   (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).DISTRIBUTED ? ' blue' :
                                   (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).RECEIVED ? ' purple' :
                                   (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).TAPPED ? ' orange' :
-                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))" 
+                                  (k.status == T(com.mythictales.bms.taplist.domain.KegStatus).BLOWN ? ' red' : ' gray'))))"
                   th:text="${k.status}">FILLED</span>
           </td>
           <td th:text="${k.assignedVenue != null ? k.assignedVenue.name : '-'}">-</td>

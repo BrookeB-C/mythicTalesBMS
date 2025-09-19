@@ -11,18 +11,27 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mythictales.bms.taplist.catalog.domain.Recipe;
 import com.mythictales.bms.taplist.catalog.repo.RecipeRepository;
+import com.mythictales.bms.taplist.catalog.service.RecipeImportService;
+import com.mythictales.bms.taplist.catalog.service.RecipeImportService.DuplicateRecipeException;
 import com.mythictales.bms.taplist.security.CurrentUser;
+import com.mythictales.bms.taplist.service.BusinessValidationException;
 
 @Controller
 @RequestMapping("/admin/catalog/recipes")
 public class AdminCatalogController {
-  private final RecipeRepository recipes;
+  private static final long MAX_IMPORT_BYTES = 2_000_000L;
 
-  public AdminCatalogController(RecipeRepository recipes) {
+  private final RecipeRepository recipes;
+  private final RecipeImportService importer;
+
+  public AdminCatalogController(RecipeRepository recipes, RecipeImportService importer) {
     this.recipes = recipes;
+    this.importer = importer;
   }
 
   @GetMapping
@@ -55,6 +64,65 @@ public class AdminCatalogController {
     model.addAttribute("q", q);
     model.addAttribute("recipeCount", list.size());
     return "admin/catalog-recipes";
+  }
+
+  @PostMapping("/import")
+  public String importRecipes(
+      @AuthenticationPrincipal CurrentUser user,
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(value = "force", defaultValue = "false") boolean force,
+      RedirectAttributes redirectAttributes) {
+    if (user == null || user.getBreweryId() == null) {
+      redirectAttributes.addFlashAttribute(
+          "importError", "Assign a brewery to your profile before importing recipes.");
+      redirectAttributes.addFlashAttribute("importForce", force);
+      return "redirect:/admin/catalog/recipes";
+    }
+
+    if (file == null || file.isEmpty()) {
+      redirectAttributes.addFlashAttribute(
+          "importError", "Select a BeerXML or BeerSmith XML file to import.");
+      redirectAttributes.addFlashAttribute("importForce", force);
+      return "redirect:/admin/catalog/recipes";
+    }
+
+    if (file.getSize() > MAX_IMPORT_BYTES) {
+      redirectAttributes.addFlashAttribute(
+          "importError", "File too large. Recipe imports are limited to 2MB.");
+      redirectAttributes.addFlashAttribute("importForce", force);
+      return "redirect:/admin/catalog/recipes";
+    }
+
+    String contentType = file.getContentType();
+    if (contentType != null
+        && !(contentType.equalsIgnoreCase(MediaType.APPLICATION_XML_VALUE)
+            || contentType.equalsIgnoreCase(MediaType.TEXT_XML_VALUE)
+            || contentType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM_VALUE))) {
+      redirectAttributes.addFlashAttribute("importError", "Unsupported file type: " + contentType);
+      redirectAttributes.addFlashAttribute("importForce", force);
+      return "redirect:/admin/catalog/recipes";
+    }
+
+    try {
+      String xml = new String(file.getBytes(), StandardCharsets.UTF_8);
+      List<Long> ids = importer.importXml(user.getBreweryId(), xml, force);
+      redirectAttributes.addFlashAttribute("importSuccessCount", ids.size());
+      redirectAttributes.addFlashAttribute("importForce", force);
+    } catch (DuplicateRecipeException dup) {
+      redirectAttributes.addFlashAttribute("importDuplicateId", dup.getExistingId());
+      redirectAttributes.addFlashAttribute(
+          "importError", "Recipe already exists. Enable 'Overwrite duplicates' to replace it.");
+      redirectAttributes.addFlashAttribute("importForce", force);
+    } catch (BusinessValidationException e) {
+      redirectAttributes.addFlashAttribute("importError", e.getMessage());
+      redirectAttributes.addFlashAttribute("importForce", force);
+    } catch (Exception e) {
+      redirectAttributes.addFlashAttribute(
+          "importError", "Import failed. Verify the XML and try again.");
+      redirectAttributes.addFlashAttribute("importForce", force);
+    }
+
+    return "redirect:/admin/catalog/recipes";
   }
 
   @GetMapping("/{id}")
