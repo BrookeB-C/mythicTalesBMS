@@ -1,0 +1,45 @@
+<div th:fragment="story">
+  <section class="story-section">
+    <h2>Production Metrics</h2>
+    <div class="viz-grid">
+      <article class="viz-card">
+        <header>
+          <h3>Fermentation Pace</h3>
+          <span class="metric-pill success">+6%</span>
+        </header>
+        <div class="sparkline" aria-hidden="true">
+          <svg viewBox="0 0 120 40" role="img">
+            <polyline points="0,28 20,18 40,22 60,12 80,16 100,6 120,10" />
+          </svg>
+        </div>
+        <footer>Trend based on last 14 days of completed batches.</footer>
+      </article>
+      <article class="viz-card">
+        <header>
+          <h3>Tank Capacity</h3>
+          <span class="muted">68% utilized</span>
+        </header>
+        <div class="capacity-ring">
+          <svg viewBox="0 0 120 120">
+            <circle class="bg" cx="60" cy="60" r="52" />
+            <circle class="fg" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="105" />
+            <text x="60" y="66" text-anchor="middle">68%</text>
+          </svg>
+        </div>
+        <footer>Fermenters 9/12 • Conditioning 3/6 • Bright tanks 2/4.</footer>
+      </article>
+      <article class="viz-card">
+        <header>
+          <h3>Distribution Readiness</h3>
+          <span class="muted">by status</span>
+        </header>
+        <div class="segmented-bar">
+          <div class="segment ready" style="--segment:48%">Ready 48%</div>
+          <div class="segment staging" style="--segment:32%">Staging 32%</div>
+          <div class="segment hold" style="--segment:20%">Hold 20%</div>
+        </div>
+        <footer>Includes all packaged batches scheduled this week.</footer>
+      </article>
+    </div>
+  </section>
+</div>

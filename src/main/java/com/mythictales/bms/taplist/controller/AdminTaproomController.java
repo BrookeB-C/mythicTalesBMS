@@ -86,11 +86,28 @@ public class AdminTaproomController {
       model.addAttribute("taproomUsers", List.of());
       model.addAttribute("tab", tab);
       model.addAttribute("backToBrewery", "brewery".equalsIgnoreCase(from));
+      model.addAttribute("tapCount", 0);
+      model.addAttribute("activeTapHandles", 0);
+      model.addAttribute("lowTapAlertCount", 0);
+      model.addAttribute("availableKegCount", 0);
+      model.addAttribute("inboundKegCount", 0);
+      model.addAttribute("blownKegCount", 0);
+      model.addAttribute("eventsCount", 0);
+      model.addAttribute("allStatuses", KegStatus.values());
       return "admin/taproom";
     }
 
     List<Tap> userTaps = taps.findByTaproomId(effectiveTaproomId);
     model.addAttribute("taps", userTaps);
+    long activeTapHandles = userTaps.stream().filter(t -> t.getKeg() != null).count();
+    long lowTapAlerts =
+        userTaps.stream()
+            .filter(t -> t.getKeg() != null)
+            .filter(t -> t.getKeg().getFillPercent() <= 10)
+            .count();
+    model.addAttribute("tapCount", userTaps.size());
+    model.addAttribute("activeTapHandles", activeTapHandles);
+    model.addAttribute("lowTapAlertCount", lowTapAlerts);
 
     // Determine venue
     Venue venue = null;
@@ -111,14 +128,17 @@ public class AdminTaproomController {
     if (venue != null) {
       model.addAttribute("venue", venue);
       // Events list for Events tab / badge
+      int eventCount = 0;
       try {
         List<KegEvent> evs = events.findVenueEvents(venue.getId());
         model.addAttribute("events", evs);
+        eventCount = evs.size();
         if (!evs.isEmpty()) {
           model.addAttribute("lastEvent", evs.get(0));
         }
       } catch (Exception ignored) {
       }
+      model.addAttribute("eventsCount", eventCount);
       // Status chips: default to RECEIVED if none selected
       KegStatus selected = status;
       List<com.mythictales.bms.taplist.domain.Keg> available;
@@ -167,11 +187,20 @@ public class AdminTaproomController {
         inbound = kegs.findByAssignedVenueIdAndStatus(venue.getId(), KegStatus.DISTRIBUTED);
       }
       model.addAttribute("inboundKegs", inbound);
-      model.addAttribute(
-          "blownKegs", kegs.findByAssignedVenueIdAndStatus(venue.getId(), KegStatus.BLOWN));
+      List<com.mythictales.bms.taplist.domain.Keg> blown =
+          kegs.findByAssignedVenueIdAndStatus(venue.getId(), KegStatus.BLOWN);
+      model.addAttribute("blownKegs", blown);
+      model.addAttribute("availableKegCount", available != null ? available.size() : 0);
+      model.addAttribute("inboundKegCount", inbound != null ? inbound.size() : 0);
+      model.addAttribute("blownKegCount", blown != null ? blown.size() : 0);
     } else {
       model.addAttribute("kegs", List.of());
       model.addAttribute("inboundKegs", List.of());
+      model.addAttribute("availableKegCount", 0);
+      model.addAttribute("inboundKegCount", 0);
+      model.addAttribute("blownKegCount", 0);
+      model.addAttribute("eventsCount", 0);
+      model.addAttribute("allStatuses", KegStatus.values());
     }
 
     // Users assigned to this taproom

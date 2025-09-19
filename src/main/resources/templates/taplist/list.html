@@ -85,7 +85,7 @@
                 </select>
               </label>
               <button class="btn" type="submit">Pour</button>
-              <button class="btn danger" type="submit" th:formaction="@{'/taps/' + ${t.id} + '/blow'}">Blow</button>
+              <button class="btn critical outline" type="submit" th:formaction="@{'/taps/' + ${t.id} + '/blow'}">Blow</button>
             </form>
           </div>
           <div th:if="${t.keg == null}" class="actions">

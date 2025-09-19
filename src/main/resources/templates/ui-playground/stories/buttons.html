@@ -1,0 +1,28 @@
+<div th:fragment="story">
+  <section class="story-section">
+    <h2>Primary Actions</h2>
+    <div class="story-grid">
+      <button class="story-btn btn-primary">Create Brew Run</button>
+      <button class="story-btn btn-primary" disabled>Schedule Batch</button>
+      <button class="story-btn btn-primary icon">Save Draft<i class="icon-chevron"></i></button>
+    </div>
+    <p class="muted">Primary buttons rely on the accent color; disabled state dims to 40% opacity.</p>
+  </section>
+
+  <section class="story-section">
+    <h2>Secondary &amp; Ghost</h2>
+    <div class="story-grid">
+      <button class="story-btn btn-secondary">Assign Brewer</button>
+      <button class="story-btn btn-ghost">Export CSV</button>
+      <button class="story-btn btn-ghost danger">Stop Batch</button>
+    </div>
+  </section>
+
+  <section class="story-section">
+    <h2>Destructive</h2>
+    <div class="story-grid">
+      <button class="story-btn btn-critical">Archive Taproom</button>
+      <button class="story-btn btn-critical outline">Remove Recipe</button>
+    </div>
+  </section>
+</div>

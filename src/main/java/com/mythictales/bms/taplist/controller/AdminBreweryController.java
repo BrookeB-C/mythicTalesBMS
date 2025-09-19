@@ -207,11 +207,32 @@ public class AdminBreweryController {
       }
       model.addAttribute("breweryUsers", userList);
       model.addAttribute("userVenueId", userVenueId);
+
+      int taproomCount = trList.size();
+      int activeTapHandles =
+          activeKegsByTaproom.values().stream().mapToInt(Integer::intValue).sum();
+      int availableKegs = unassigned != null ? unassigned.size() : 0;
+      int distributedKegs = assigned != null ? assigned.size() : 0;
+      int returnedKegCount = returned != null ? returned.size() : 0;
+      int breweryUserCount = userList.size();
+
+      model.addAttribute("taproomCount", taproomCount);
+      model.addAttribute("activeTapHandles", activeTapHandles);
+      model.addAttribute("availableKegCount", availableKegs);
+      model.addAttribute("distributedKegCount", distributedKegs);
+      model.addAttribute("returnedKegCount", returnedKegCount);
+      model.addAttribute("breweryUserCount", breweryUserCount);
     } else {
       model.addAttribute("taprooms", java.util.List.of());
       model.addAttribute("kegs", java.util.List.of());
       model.addAttribute("venues", java.util.List.of());
       model.addAttribute("breweryUsers", java.util.List.of());
+      model.addAttribute("taproomCount", 0);
+      model.addAttribute("activeTapHandles", 0);
+      model.addAttribute("availableKegCount", 0);
+      model.addAttribute("distributedKegCount", 0);
+      model.addAttribute("returnedKegCount", 0);
+      model.addAttribute("breweryUserCount", 0);
     }
     model.addAttribute("allStatuses", KegStatus.values());
     model.addAttribute("tab", tab);
