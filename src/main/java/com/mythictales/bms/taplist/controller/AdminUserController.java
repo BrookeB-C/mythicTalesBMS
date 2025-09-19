@@ -74,7 +74,7 @@ public class AdminUserController {
     }
     if (users.findByUsername(trimmedUsername).isPresent()) {
       redirectAttributes.addFlashAttribute(
-          "errorMessage", "Username already exists. Choose another." );
+          "errorMessage", "Username already exists. Choose another.");
       return "redirect:/admin/users";
     }
 
@@ -95,10 +95,7 @@ public class AdminUserController {
               "errorMessage", "Select a brewery for the new brewery admin user.");
           return "redirect:/admin/users";
         }
-        Brewery brewery =
-            breweries
-                .findById(breweryId)
-                .orElse(null);
+        Brewery brewery = breweries.findById(breweryId).orElse(null);
         if (brewery == null) {
           redirectAttributes.addFlashAttribute(
               "errorMessage", "Unable to locate the selected brewery.");
@@ -141,8 +138,7 @@ public class AdminUserController {
         account.setTaproom(null);
       }
       default -> {
-        redirectAttributes.addFlashAttribute(
-            "errorMessage", "Unsupported role selection.");
+        redirectAttributes.addFlashAttribute("errorMessage", "Unsupported role selection.");
         return "redirect:/admin/users";
       }
     }
@@ -167,7 +163,9 @@ public class AdminUserController {
         .findById(userId)
         .ifPresentOrElse(
             user -> {
-              if (user.getRole() == Role.SITE_ADMIN && users.findAll().stream().filter(u -> u.getRole() == Role.SITE_ADMIN).count() <= 1) {
+              if (user.getRole() == Role.SITE_ADMIN
+                  && users.findAll().stream().filter(u -> u.getRole() == Role.SITE_ADMIN).count()
+                      <= 1) {
                 redirectAttributes.addFlashAttribute(
                     "errorMessage", "At least one site admin account must remain.");
               } else {

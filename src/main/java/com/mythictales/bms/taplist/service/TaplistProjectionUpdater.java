@@ -23,19 +23,27 @@ public class TaplistProjectionUpdater {
 
   @EventListener
   @Transactional
-  public void onTapped(KegTapped evt) { refreshTap(evt.tapId()); }
+  public void onTapped(KegTapped evt) {
+    refreshTap(evt.tapId());
+  }
 
   @EventListener
   @Transactional
-  public void onPoured(BeerPoured evt) { refreshTap(evt.tapId()); }
+  public void onPoured(BeerPoured evt) {
+    refreshTap(evt.tapId());
+  }
 
   @EventListener
   @Transactional
-  public void onBlown(KegBlown evt) { refreshTap(evt.tapId()); }
+  public void onBlown(KegBlown evt) {
+    refreshTap(evt.tapId());
+  }
 
   @EventListener
   @Transactional
-  public void onUntapped(KegUntapped evt) { refreshTap(evt.tapId()); }
+  public void onUntapped(KegUntapped evt) {
+    refreshTap(evt.tapId());
+  }
 
   private void refreshTap(Long tapId) {
     Tap tap = taps.findById(tapId).orElse(null);
@@ -68,4 +76,3 @@ public class TaplistProjectionUpdater {
     viewRepo.save(v);
   }
 }
-

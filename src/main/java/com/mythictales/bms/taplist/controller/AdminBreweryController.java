@@ -11,15 +11,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.mythictales.bms.taplist.domain.Beer;
 import com.mythictales.bms.taplist.domain.Bar;
+import com.mythictales.bms.taplist.domain.Beer;
 import com.mythictales.bms.taplist.domain.Keg;
 import com.mythictales.bms.taplist.domain.KegSizeSpec;
 import com.mythictales.bms.taplist.domain.KegStatus;
 import com.mythictales.bms.taplist.domain.Role;
 import com.mythictales.bms.taplist.domain.UserAccount;
-import com.mythictales.bms.taplist.repo.BeerRepository;
 import com.mythictales.bms.taplist.repo.BarRepository;
+import com.mythictales.bms.taplist.repo.BeerRepository;
 import com.mythictales.bms.taplist.repo.BreweryRepository;
 import com.mythictales.bms.taplist.repo.KegRepository;
 import com.mythictales.bms.taplist.repo.KegSizeSpecRepository;
@@ -250,7 +250,8 @@ public class AdminBreweryController {
       model.addAttribute("breweryBars", java.util.List.of());
       model.addAttribute(
           "breweryUserRoles",
-          java.util.List.of(Role.BREWERY_ADMIN, Role.TAPROOM_ADMIN, Role.TAPROOM_USER, Role.BAR_ADMIN));
+          java.util.List.of(
+              Role.BREWERY_ADMIN, Role.TAPROOM_ADMIN, Role.TAPROOM_USER, Role.BAR_ADMIN));
       model.addAttribute("taproomCount", 0);
       model.addAttribute("activeTapHandles", 0);
       model.addAttribute("availableKegCount", 0);
@@ -293,14 +294,13 @@ public class AdminBreweryController {
     }
     if (users.findByUsername(trimmedUsername).isPresent()) {
       redirectAttributes.addFlashAttribute(
-          "errorMessage", "Username already exists. Choose another." );
+          "errorMessage", "Username already exists. Choose another.");
       return redirect;
     }
 
     var brewery = breweries.findById(breweryId).orElse(null);
     if (brewery == null) {
-      redirectAttributes.addFlashAttribute(
-          "errorMessage", "Unable to load brewery context.");
+      redirectAttributes.addFlashAttribute("errorMessage", "Unable to load brewery context.");
       return redirect;
     }
 
@@ -322,7 +322,9 @@ public class AdminBreweryController {
           return redirect;
         }
         var taproom = taprooms.findById(taproomId).orElse(null);
-        if (taproom == null || taproom.getBrewery() == null || !breweryId.equals(taproom.getBrewery().getId())) {
+        if (taproom == null
+            || taproom.getBrewery() == null
+            || !breweryId.equals(taproom.getBrewery().getId())) {
           redirectAttributes.addFlashAttribute(
               "errorMessage", "Taproom selection is not part of this brewery.");
           return redirect;
@@ -338,7 +340,9 @@ public class AdminBreweryController {
           return redirect;
         }
         Bar bar = bars.findById(barId).orElse(null);
-        if (bar == null || bar.getBrewery() == null || !breweryId.equals(bar.getBrewery().getId())) {
+        if (bar == null
+            || bar.getBrewery() == null
+            || !breweryId.equals(bar.getBrewery().getId())) {
           redirectAttributes.addFlashAttribute(
               "errorMessage", "Bar selection is not part of this brewery.");
           return redirect;
@@ -348,8 +352,7 @@ public class AdminBreweryController {
         account.setTaproom(null);
       }
       default -> {
-        redirectAttributes.addFlashAttribute(
-            "errorMessage", "Unsupported role selection.");
+        redirectAttributes.addFlashAttribute("errorMessage", "Unsupported role selection.");
         return redirect;
       }
     }

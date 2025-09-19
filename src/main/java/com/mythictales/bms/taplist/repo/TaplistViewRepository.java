@@ -9,4 +9,3 @@ import com.mythictales.bms.taplist.domain.TaplistView;
 public interface TaplistViewRepository extends JpaRepository<TaplistView, Long> {
   List<TaplistView> findByVenueIdOrderByTapIdAsc(Long venueId);
 }
-
