@@ -2,6 +2,7 @@ package com.mythictales.bms.taplist.controller;
 
 import java.util.List;
 import java.util.Locale;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,22 +21,10 @@ public class UiPlaygroundController {
               "foundations",
               "Foundations",
               "Color, typography, spacing tokens for the enterprise UI"),
-          new Story(
-              "buttons",
-              "Buttons",
-              "Primary, secondary, and ghost button treatments"),
-          new Story(
-              "cards",
-              "Cards",
-              "Metrics and content containers with headers and footers"),
-          new Story(
-              "tables",
-              "Tables",
-              "Data grid with zebra striping, badges, and bulk actions"),
-          new Story(
-              "forms",
-              "Forms",
-              "Input controls, validation states, and inline guidance"),
+          new Story("buttons", "Buttons", "Primary, secondary, and ghost button treatments"),
+          new Story("cards", "Cards", "Metrics and content containers with headers and footers"),
+          new Story("tables", "Tables", "Data grid with zebra striping, badges, and bulk actions"),
+          new Story("forms", "Forms", "Input controls, validation states, and inline guidance"),
           new Story(
               "overlays",
               "Overlays & Dialogs",
@@ -46,7 +35,8 @@ public class UiPlaygroundController {
               "Spark lines, tank capacity, and progress indicators"));
 
   @GetMapping
-  public String playground(@RequestParam(value = "story", required = false) String story, Model model) {
+  public String playground(
+      @RequestParam(value = "story", required = false) String story, Model model) {
     Story selected = selectStory(story);
     model.addAttribute("stories", STORIES);
     model.addAttribute("selectedStory", selected.id());
@@ -59,7 +49,10 @@ public class UiPlaygroundController {
       return STORIES.get(0);
     }
     String normalized = story.toLowerCase(Locale.ROOT);
-    return STORIES.stream().filter(s -> s.id().equals(normalized)).findFirst().orElse(STORIES.get(0));
+    return STORIES.stream()
+        .filter(s -> s.id().equals(normalized))
+        .findFirst()
+        .orElse(STORIES.get(0));
   }
 
   public record Story(String id, String label, String description) {}

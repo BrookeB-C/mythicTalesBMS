@@ -37,10 +37,8 @@ public class AdminSiteController {
     model.addAttribute("breweryCount", breweries.count());
     model.addAttribute("barCount", bars.count());
     model.addAttribute("taproomCount", taprooms.count());
-    model.addAttribute(
-        "tappedKegCount", kegs.findByStatus(KegStatus.TAPPED).size());
-    model.addAttribute(
-        "distributedKegCount", kegs.findByStatus(KegStatus.DISTRIBUTED).size());
+    model.addAttribute("tappedKegCount", kegs.findByStatus(KegStatus.TAPPED).size());
+    model.addAttribute("distributedKegCount", kegs.findByStatus(KegStatus.DISTRIBUTED).size());
     return "admin/site";
   }
 }

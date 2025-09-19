@@ -28,8 +28,7 @@ public class AdminBarController {
       tapList = taps.findByBarId(user.getBarId());
     }
 
-    long activeTaps =
-        tapList.stream().filter(t -> t.getKeg() != null).count();
+    long activeTaps = tapList.stream().filter(t -> t.getKeg() != null).count();
     long lowAlerts =
         tapList.stream()
             .filter(t -> t.getKeg() != null)

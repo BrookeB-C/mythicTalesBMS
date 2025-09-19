@@ -48,7 +48,8 @@ public class TaplistController {
       @RequestParam(value = "venueId", required = false) Long venueId,
       @RequestParam(value = "taproomId", required = false) Long taproomId,
       @RequestParam(value = "barId", required = false) Long barId,
-      @RequestParam(value = "refreshSeconds", required = false, defaultValue = "15") int refreshSeconds,
+      @RequestParam(value = "refreshSeconds", required = false, defaultValue = "15")
+          int refreshSeconds,
       Model model) {
     if (venueId != null) {
       model.addAttribute("projections", taplistViews.findByVenueIdOrderByTapIdAsc(venueId));

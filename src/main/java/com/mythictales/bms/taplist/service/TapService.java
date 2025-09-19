@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mythictales.bms.taplist.domain.*;
-import com.mythictales.bms.taplist.repo.*;
 import com.mythictales.bms.taplist.kafka.DomainEventMetadata;
 import com.mythictales.bms.taplist.kafka.DomainEventPublisher;
+import com.mythictales.bms.taplist.repo.*;
 
 @Service
 public class TapService {

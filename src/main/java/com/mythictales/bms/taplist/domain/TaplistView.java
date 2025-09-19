@@ -38,23 +38,75 @@ public class TaplistView {
     this.tapId = tapId;
   }
 
-  public Long getTapId() { return tapId; }
-  public void setTapId(Long tapId) { this.tapId = tapId; }
-  public Long getVenueId() { return venueId; }
-  public void setVenueId(Long venueId) { this.venueId = venueId; }
-  public String getBeerName() { return beerName; }
-  public void setBeerName(String beerName) { this.beerName = beerName; }
-  public String getStyle() { return style; }
-  public void setStyle(String style) { this.style = style; }
-  public Double getAbv() { return abv; }
-  public void setAbv(Double abv) { this.abv = abv; }
-  public Double getRemainingOunces() { return remainingOunces; }
-  public void setRemainingOunces(Double remainingOunces) { this.remainingOunces = remainingOunces; }
-  public Double getTotalOunces() { return totalOunces; }
-  public void setTotalOunces(Double totalOunces) { this.totalOunces = totalOunces; }
-  public Integer getFillPercent() { return fillPercent; }
-  public void setFillPercent(Integer fillPercent) { this.fillPercent = fillPercent; }
-  public Instant getUpdatedAt() { return updatedAt; }
-  public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-}
+  public Long getTapId() {
+    return tapId;
+  }
 
+  public void setTapId(Long tapId) {
+    this.tapId = tapId;
+  }
+
+  public Long getVenueId() {
+    return venueId;
+  }
+
+  public void setVenueId(Long venueId) {
+    this.venueId = venueId;
+  }
+
+  public String getBeerName() {
+    return beerName;
+  }
+
+  public void setBeerName(String beerName) {
+    this.beerName = beerName;
+  }
+
+  public String getStyle() {
+    return style;
+  }
+
+  public void setStyle(String style) {
+    this.style = style;
+  }
+
+  public Double getAbv() {
+    return abv;
+  }
+
+  public void setAbv(Double abv) {
+    this.abv = abv;
+  }
+
+  public Double getRemainingOunces() {
+    return remainingOunces;
+  }
+
+  public void setRemainingOunces(Double remainingOunces) {
+    this.remainingOunces = remainingOunces;
+  }
+
+  public Double getTotalOunces() {
+    return totalOunces;
+  }
+
+  public void setTotalOunces(Double totalOunces) {
+    this.totalOunces = totalOunces;
+  }
+
+  public Integer getFillPercent() {
+    return fillPercent;
+  }
+
+  public void setFillPercent(Integer fillPercent) {
+    this.fillPercent = fillPercent;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(Instant updatedAt) {
+    this.updatedAt = updatedAt;
+  }
+}

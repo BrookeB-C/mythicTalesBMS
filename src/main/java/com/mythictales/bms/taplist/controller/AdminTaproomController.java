@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mythictales.bms.taplist.domain.Beer;
-import com.mythictales.bms.taplist.domain.Role;
 import com.mythictales.bms.taplist.domain.KegEvent;
 import com.mythictales.bms.taplist.domain.KegSizeSpec;
 import com.mythictales.bms.taplist.domain.KegStatus;
+import com.mythictales.bms.taplist.domain.Role;
 import com.mythictales.bms.taplist.domain.Tap;
 import com.mythictales.bms.taplist.domain.Taproom;
+import com.mythictales.bms.taplist.domain.UserAccount;
 import com.mythictales.bms.taplist.domain.Venue;
 import com.mythictales.bms.taplist.domain.VenueType;
-import com.mythictales.bms.taplist.domain.UserAccount;
 import com.mythictales.bms.taplist.repo.BeerRepository;
 import com.mythictales.bms.taplist.repo.KegEventRepository;
 import com.mythictales.bms.taplist.repo.KegRepository;
@@ -257,8 +257,7 @@ public class AdminTaproomController {
 
     Taproom taproom = taprooms.findById(effectiveTaproomId).orElse(null);
     if (taproom == null) {
-      redirectAttributes.addFlashAttribute(
-          "errorMessage", "Taproom not found.");
+      redirectAttributes.addFlashAttribute("errorMessage", "Taproom not found.");
       return redirect;
     }
     if (currentUser != null
@@ -278,7 +277,7 @@ public class AdminTaproomController {
     }
     if (users.findByUsername(trimmedUsername).isPresent()) {
       redirectAttributes.addFlashAttribute(
-          "errorMessage", "Username already exists. Choose another." );
+          "errorMessage", "Username already exists. Choose another.");
       return redirect;
     }
 
