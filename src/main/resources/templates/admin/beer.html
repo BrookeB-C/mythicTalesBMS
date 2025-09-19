@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="layouts/app :: layout('Beer Library', 'beer', 'Link brewery beers to BJCP guidelines and keep style metadata current.', ~{::section[@id='page-content']})">
+      th:replace="~{layouts/app :: layout('Beer Library', 'beer', 'Link brewery beers to BJCP guidelines and keep style metadata current.', ~{::section[@id='page-content']})}">
 <section id="page-content">
   <section class="page-section">
     <div class="card-grid">
