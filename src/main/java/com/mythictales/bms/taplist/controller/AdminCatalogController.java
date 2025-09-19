@@ -97,15 +97,19 @@ public class AdminCatalogController {
     if (contentType != null
         && !(contentType.equalsIgnoreCase(MediaType.APPLICATION_XML_VALUE)
             || contentType.equalsIgnoreCase(MediaType.TEXT_XML_VALUE)
-            || contentType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM_VALUE))) {
+            || contentType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM_VALUE)
+            || contentType.equalsIgnoreCase("application/zip")
+            || contentType.equalsIgnoreCase("application/x-zip-compressed")
+            || contentType.equalsIgnoreCase("application/x-zip"))) {
       redirectAttributes.addFlashAttribute("importError", "Unsupported file type: " + contentType);
       redirectAttributes.addFlashAttribute("importForce", force);
       return "redirect:/admin/catalog/recipes";
     }
 
     try {
-      String xml = new String(file.getBytes(), StandardCharsets.UTF_8);
-      List<Long> ids = importer.importXml(user.getBreweryId(), xml, force);
+      List<Long> ids =
+          importer.importFile(
+              user.getBreweryId(), file.getBytes(), file.getOriginalFilename(), force);
       redirectAttributes.addFlashAttribute("importSuccessCount", ids.size());
       redirectAttributes.addFlashAttribute("importForce", force);
     } catch (DuplicateRecipeException dup) {

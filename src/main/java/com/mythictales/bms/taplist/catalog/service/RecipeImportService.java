@@ -1,11 +1,20 @@
 package com.mythictales.bms.taplist.catalog.service;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -37,15 +46,29 @@ public class RecipeImportService {
     this.breweries = breweries;
   }
 
+  private record DecodedXml(byte[] bytes, String text) {}
+
+  @Transactional
+  public List<Long> importFile(
+      Long breweryId, byte[] payload, String originalFilename, boolean force) {
+    DecodedXml decoded = decodePayload(payload, originalFilename);
+    return importXmlDecoded(breweryId, decoded, force);
+  }
+
   @Transactional
   public List<Long> importXml(Long breweryId, String xml, boolean force) {
+    DecodedXml decoded =
+        new DecodedXml(xml.getBytes(StandardCharsets.UTF_8), stripBom(xml));
+    return importXmlDecoded(breweryId, decoded, force);
+  }
+
+  private List<Long> importXmlDecoded(Long breweryId, DecodedXml decoded, boolean force) {
     Brewery brewery = breweries.findById(breweryId).orElseThrow();
     try {
       DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
       f.setNamespaceAware(true);
       Document doc =
-          f.newDocumentBuilder()
-              .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+          f.newDocumentBuilder().parse(new ByteArrayInputStream(decoded.bytes()));
       Element root = doc.getDocumentElement();
       String rootName = root.getTagName();
       List<Long> ids = new ArrayList<>();
@@ -64,13 +87,94 @@ public class RecipeImportService {
         ids.add(importSingleRecipeNode(brewery, root, xmlFragment(root), force));
       } else {
         // Fallback: treat entire doc as one recipe
-        ids.add(importSingleRecipeNode(brewery, root, normalize(xml), force));
+        ids.add(importSingleRecipeNode(brewery, root, normalize(decoded.text()), force));
       }
       return ids;
     } catch (Exception e) {
       throw new com.mythictales.bms.taplist.service.BusinessValidationException(
           "Failed to parse recipe XML", java.util.Map.of("reason", "XML_PARSE_ERROR"));
     }
+  }
+
+  static DecodedXml decodePayload(byte[] payload, String originalFilename) {
+    if (payload == null || payload.length == 0) {
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "Empty file", java.util.Map.of("reason", "EMPTY_FILE"));
+    }
+    String lowerName = originalFilename != null ? originalFilename.toLowerCase(Locale.ROOT) : "";
+    boolean looksZip = payload.length >= 2 && payload[0] == 'P' && payload[1] == 'K';
+    byte[] data = payload;
+    if (looksZip || lowerName.endsWith(".bsmx") || lowerName.endsWith(".zip")) {
+      data = unzipFirstEntry(payload);
+    }
+    Charset charset = detectCharset(data);
+    String text = stripBom(new String(data, charset));
+    return new DecodedXml(data, text);
+  }
+
+  private static byte[] unzipFirstEntry(byte[] payload) {
+    try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(payload))) {
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        if (entry.isDirectory()) {
+          continue;
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        zis.transferTo(out);
+        zis.closeEntry();
+        return out.toByteArray();
+      }
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "No XML found in archive", java.util.Map.of("reason", "ZIP_EMPTY"));
+    } catch (IOException e) {
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "Failed to read BeerSmith archive", java.util.Map.of("reason", "ZIP_PARSE_ERROR"));
+    }
+  }
+
+  private static final Pattern ENCODING_PATTERN =
+      Pattern.compile("encoding\\s*=\\s*\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
+
+  private static Charset detectCharset(byte[] data) {
+    if (data.length >= 3
+        && (data[0] & 0xFF) == 0xEF
+        && (data[1] & 0xFF) == 0xBB
+        && (data[2] & 0xFF) == 0xBF) {
+      return StandardCharsets.UTF_8;
+    }
+    if (data.length >= 2) {
+      int b0 = data[0] & 0xFF;
+      int b1 = data[1] & 0xFF;
+      if (b0 == 0xFE && b1 == 0xFF) {
+        return StandardCharsets.UTF_16BE;
+      }
+      if (b0 == 0xFF && b1 == 0xFE) {
+        return StandardCharsets.UTF_16LE;
+      }
+    }
+    String prefix =
+        new String(
+            data,
+            0,
+            Math.min(data.length, 1000),
+            StandardCharsets.US_ASCII);
+    Matcher matcher = ENCODING_PATTERN.matcher(prefix);
+    if (matcher.find()) {
+      String encoding = matcher.group(1).trim().replace("'", "");
+      try {
+        return Charset.forName(encoding);
+      } catch (UnsupportedCharsetException ignored) {
+        // fall back to UTF-8
+      }
+    }
+    return StandardCharsets.UTF_8;
+  }
+
+  private static String stripBom(String xml) {
+    if (xml != null && !xml.isEmpty() && xml.charAt(0) == '\uFEFF') {
+      return xml.substring(1);
+    }
+    return xml;
   }
 
   private Long importSingleRecipeNode(
