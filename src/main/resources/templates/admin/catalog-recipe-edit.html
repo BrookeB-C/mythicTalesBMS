@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="layouts/app :: layout(${recipe != null ? 'Recipe · ' + recipe.name : 'Recipe Editor'}, 'recipes', 'Brew house details and ingredient inventory.', ~{::section[@id='page-content']})">
+      th:replace="~{layouts/app :: layout(${recipe != null ? 'Recipe · ' + recipe.name : 'Recipe Editor'}, 'recipes', 'Brew house details and ingredient inventory.', ~{::section[@id='page-content']})}">
 <section id="page-content">
   <section class="page-section">
     <div class="section-heading">

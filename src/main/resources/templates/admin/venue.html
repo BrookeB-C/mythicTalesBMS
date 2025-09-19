@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="layouts/app :: layout($ {'Venue Operations · ' + (venue != null ? venue.name : 'Venue')}, 'taproom', 'Monitor tap health and historical activity for this venue.', ~{::section[@id='page-content']})">
+      th:replace="~{layouts/app :: layout($ {'Venue Operations · ' + (venue != null ? venue.name : 'Venue')}, 'taproom', 'Monitor tap health and historical activity for this venue.', ~{::section[@id='page-content']})}">
 <section id="page-content">
   <section class="page-section">
     <div class="card-grid">
