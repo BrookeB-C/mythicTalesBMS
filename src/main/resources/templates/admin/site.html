@@ -60,18 +60,14 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>City</th>
-          <th>State</th>
         </tr>
       </thead>
       <tbody>
         <tr th:each="b : ${breweries}">
           <td th:text="${b.name}">Brewery Name</td>
-          <td th:text="${b.address != null ? b.address.city : '-'}">City</td>
-          <td th:text="${b.address != null ? b.address.state : '-'}">State</td>
         </tr>
         <tr th:if="${#lists.isEmpty(breweries)}">
-          <td colspan="3" class="muted">No breweries configured yet.</td>
+          <td class="muted">No breweries configured yet.</td>
         </tr>
       </tbody>
     </table>
@@ -90,13 +86,13 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>Location</th>
+          <th>Brewery</th>
         </tr>
       </thead>
       <tbody>
         <tr th:each="b : ${bars}">
           <td th:text="${b.name}">Bar Name</td>
-          <td th:text="${b.city != null ? b.city : '-'}">Location</td>
+          <td th:text="${b.brewery != null ? b.brewery.name : '-'}">Brewery</td>
         </tr>
         <tr th:if="${#lists.isEmpty(bars)}">
           <td colspan="2" class="muted">No bar partners on file.</td>
