@@ -31,7 +31,7 @@
         <a th:href="@{/admin/taproom}" th:classappend="${activeSection} == 'taproom' ? ' active' : ''">Taprooms</a>
         <a th:href="@{/admin/bar}" th:classappend="${activeSection} == 'bar' ? ' active' : ''">Bars</a>
       </div>
-      <div class="nav-section">
+      <div class="nav-section" th:if="${currentUser == null || currentUser.role != T(com.mythictales.bms.taplist.domain.Role).SITE_ADMIN}">
         <p class="nav-label">Catalog</p>
         <a th:href="@{/admin/beer}" th:classappend="${activeSection} == 'beer' ? ' active' : ''">Beer Library</a>
         <a th:href="@{/admin/catalog/recipes}" th:classappend="${activeSection} == 'recipes' ? ' active' : ''">Recipes</a>
