@@ -16,13 +16,14 @@
       <div class="nav-section">
         <p class="nav-label">Overview</p>
         <a th:href="@{/admin/site}" th:classappend="${activeSection} == 'site' ? ' active' : ''">Control Center</a>
-        <a th:if="${currentUser != null and (currentUser.role == T(com.mythictales.bms.taplist.domain.Role).SITE_ADMIN
-                           or currentUser.role == T(com.mythictales.bms.taplist.domain.Role).BREWERY_ADMIN
-                           or currentUser.role == T(com.mythictales.bms.taplist.domain.Role).TAPROOM_ADMIN)}"
-           th:href="${currentUser.role == T(com.mythictales.bms.taplist.domain.Role).SITE_ADMIN} ? @{/admin/users} :
-                    (currentUser.role == T(com.mythictales.bms.taplist.domain.Role).BREWERY_ADMIN ? @{/admin/brewery(tab='users')} :
-                     @{/admin/taproom(tab='users')})"
-           th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+        <th:block th:if="${currentUser != null}" th:switch="${currentUser.role}">
+          <a th:case="${T(com.mythictales.bms.taplist.domain.Role).SITE_ADMIN}" th:href="@{/admin/users}"
+             th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+          <a th:case="${T(com.mythictales.bms.taplist.domain.Role).BREWERY_ADMIN}" th:href="@{/admin/brewery(tab='users')}"
+             th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+          <a th:case="${T(com.mythictales.bms.taplist.domain.Role).TAPROOM_ADMIN}" th:href="@{/admin/taproom(tab='users')}"
+             th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+        </th:block>
       </div>
       <div class="nav-section">
         <p class="nav-label">Operations</p>
