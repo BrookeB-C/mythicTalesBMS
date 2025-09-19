@@ -346,6 +346,44 @@
       </div>
     </div>
 
+    <div class="alert" th:if="${errorMessage != null}" th:text="${errorMessage}"></div>
+    <div class="alert success-alert" th:if="${successMessage != null}" th:text="${successMessage}"></div>
+
+    <form class="form-grid" method="post" th:action="@{/admin/brewery/users}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <div class="form-group">
+        <label for="brew-username">Username</label>
+        <input id="brew-username" name="username" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="brew-password">Password</label>
+        <input id="brew-password" name="password" type="password" required />
+      </div>
+      <div class="form-group">
+        <label for="brew-role">Role</label>
+        <select id="brew-role" name="role">
+          <option th:each="r : ${breweryUserRoles}" th:value="${r}" th:text="${#strings.replace(r.name(),'_',' ')}"></option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="brew-taproom">Taproom</label>
+        <select id="brew-taproom" name="taproomId">
+          <option value="">-- None --</option>
+          <option th:each="t : ${taprooms}" th:value="${t.id}" th:text="${t.name}"></option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="brew-bar">Bar</label>
+        <select id="brew-bar" name="barId">
+          <option value="">-- None --</option>
+          <option th:each="b : ${breweryBars}" th:value="${b.id}" th:text="${b.name}"></option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Create user</button>
+      </div>
+    </form>
+
     <form method="get" action="/admin/brewery" class="form-inline">
       <input type="hidden" name="tab" value="users" />
       <div class="form-group">
@@ -370,6 +408,7 @@
           <th>Brewery</th>
           <th>Taproom</th>
           <th>Bar</th>
+          <th>Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -379,9 +418,15 @@
           <td th:text="${u.brewery != null ? u.brewery.name : '-'}">-</td>
           <td th:text="${u.taproom != null ? u.taproom.name : '-'}">-</td>
           <td th:text="${u.bar != null ? u.bar.name : '-'}">-</td>
+          <td class="actions">
+            <form method="post" th:action="@{'/admin/brewery/users/' + ${u.id} + '/delete'}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+              <button class="btn ghost" type="submit">Remove</button>
+            </form>
+          </td>
         </tr>
         <tr th:if="${#lists.isEmpty(breweryUsers)}">
-          <td class="muted" colspan="5">No users found for the selected filter.</td>
+          <td class="muted" colspan="6">No users found for the selected filter.</td>
         </tr>
         </tbody>
       </table>

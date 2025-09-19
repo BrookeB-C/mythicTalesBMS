@@ -655,6 +655,10 @@ textarea:focus {
   color: var(--color-text-600);
 }
 
+.alert.success-alert {
+  border-left-color: var(--color-success-500);
+}
+
 .nowrap { white-space: nowrap; }
 
 .muted {
