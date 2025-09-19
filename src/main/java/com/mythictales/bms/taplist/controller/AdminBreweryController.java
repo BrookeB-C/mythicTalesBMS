@@ -1,18 +1,25 @@
 package com.mythictales.bms.taplist.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mythictales.bms.taplist.domain.Beer;
+import com.mythictales.bms.taplist.domain.Bar;
 import com.mythictales.bms.taplist.domain.Keg;
 import com.mythictales.bms.taplist.domain.KegSizeSpec;
 import com.mythictales.bms.taplist.domain.KegStatus;
+import com.mythictales.bms.taplist.domain.Role;
+import com.mythictales.bms.taplist.domain.UserAccount;
 import com.mythictales.bms.taplist.repo.BeerRepository;
+import com.mythictales.bms.taplist.repo.BarRepository;
 import com.mythictales.bms.taplist.repo.BreweryRepository;
 import com.mythictales.bms.taplist.repo.KegRepository;
 import com.mythictales.bms.taplist.repo.KegSizeSpecRepository;
@@ -25,15 +32,20 @@ import com.mythictales.bms.taplist.security.CurrentUser;
 @Controller
 @RequestMapping("/admin/brewery")
 public class AdminBreweryController {
+  private static final Set<Role> ALLOWED_BREWERY_USER_ROLES =
+      Set.of(Role.BREWERY_ADMIN, Role.TAPROOM_ADMIN, Role.TAPROOM_USER, Role.BAR_ADMIN);
+
   private final TaproomRepository taprooms;
   private final KegRepository kegs;
   private final VenueRepository venues;
   private final BreweryRepository breweries;
   private final UserAccountRepository users;
+  private final BarRepository bars;
   private final TapRepository taps;
   private final BeerRepository beers;
   private final KegSizeSpecRepository sizes;
   private final Environment env;
+  private final PasswordEncoder passwordEncoder;
 
   public AdminBreweryController(
       TaproomRepository taprooms,
@@ -41,19 +53,23 @@ public class AdminBreweryController {
       VenueRepository venues,
       BreweryRepository breweries,
       UserAccountRepository users,
+      BarRepository bars,
       TapRepository taps,
       BeerRepository beers,
       KegSizeSpecRepository sizes,
-      Environment env) {
+      Environment env,
+      PasswordEncoder passwordEncoder) {
     this.taprooms = taprooms;
     this.kegs = kegs;
     this.venues = venues;
     this.breweries = breweries;
     this.users = users;
+    this.bars = bars;
     this.taps = taps;
     this.beers = beers;
     this.sizes = sizes;
     this.env = env;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @GetMapping
@@ -207,6 +223,10 @@ public class AdminBreweryController {
       }
       model.addAttribute("breweryUsers", userList);
       model.addAttribute("userVenueId", userVenueId);
+      model.addAttribute("breweryBars", bars.findByBreweryId(user.getBreweryId()));
+      model.addAttribute(
+          "breweryUserRoles",
+          List.of(Role.BREWERY_ADMIN, Role.TAPROOM_ADMIN, Role.TAPROOM_USER, Role.BAR_ADMIN));
 
       int taproomCount = trList.size();
       int activeTapHandles =
@@ -227,6 +247,10 @@ public class AdminBreweryController {
       model.addAttribute("kegs", java.util.List.of());
       model.addAttribute("venues", java.util.List.of());
       model.addAttribute("breweryUsers", java.util.List.of());
+      model.addAttribute("breweryBars", java.util.List.of());
+      model.addAttribute(
+          "breweryUserRoles",
+          java.util.List.of(Role.BREWERY_ADMIN, Role.TAPROOM_ADMIN, Role.TAPROOM_USER, Role.BAR_ADMIN));
       model.addAttribute("taproomCount", 0);
       model.addAttribute("activeTapHandles", 0);
       model.addAttribute("availableKegCount", 0);
@@ -240,10 +264,159 @@ public class AdminBreweryController {
     return "admin/brewery";
   }
 
+  @PostMapping("/users")
+  public String createScopedUser(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestParam String username,
+      @RequestParam String password,
+      @RequestParam Role role,
+      @RequestParam(name = "taproomId", required = false) Long taproomId,
+      @RequestParam(name = "barId", required = false) Long barId,
+      RedirectAttributes redirectAttributes) {
+    String redirect = "redirect:/admin/brewery?tab=users";
+    Long breweryId = currentUser != null ? currentUser.getBreweryId() : null;
+    if (breweryId == null) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Unable to determine brewery context for the current user.");
+      return redirect;
+    }
+    if (!ALLOWED_BREWERY_USER_ROLES.contains(role)) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Selected role is not managed at the brewery level.");
+      return redirect;
+    }
+    String trimmedUsername = username == null ? "" : username.trim();
+    if (trimmedUsername.isEmpty() || password == null || password.isBlank()) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Username and password are required to create a user.");
+      return redirect;
+    }
+    if (users.findByUsername(trimmedUsername).isPresent()) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Username already exists. Choose another." );
+      return redirect;
+    }
+
+    var brewery = breweries.findById(breweryId).orElse(null);
+    if (brewery == null) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Unable to load brewery context.");
+      return redirect;
+    }
+
+    UserAccount account = new UserAccount();
+    account.setUsername(trimmedUsername);
+    account.setPassword(passwordEncoder.encode(password));
+    account.setRole(role);
+
+    switch (role) {
+      case BREWERY_ADMIN -> {
+        account.setBrewery(brewery);
+        account.setTaproom(null);
+        account.setBar(null);
+      }
+      case TAPROOM_ADMIN, TAPROOM_USER -> {
+        if (taproomId == null) {
+          redirectAttributes.addFlashAttribute(
+              "errorMessage", "Select a taproom for the taproom user.");
+          return redirect;
+        }
+        var taproom = taprooms.findById(taproomId).orElse(null);
+        if (taproom == null || taproom.getBrewery() == null || !breweryId.equals(taproom.getBrewery().getId())) {
+          redirectAttributes.addFlashAttribute(
+              "errorMessage", "Taproom selection is not part of this brewery.");
+          return redirect;
+        }
+        account.setTaproom(taproom);
+        account.setBrewery(taproom.getBrewery());
+        account.setBar(null);
+      }
+      case BAR_ADMIN -> {
+        if (barId == null) {
+          redirectAttributes.addFlashAttribute(
+              "errorMessage", "Select a bar for the bar admin user.");
+          return redirect;
+        }
+        Bar bar = bars.findById(barId).orElse(null);
+        if (bar == null || bar.getBrewery() == null || !breweryId.equals(bar.getBrewery().getId())) {
+          redirectAttributes.addFlashAttribute(
+              "errorMessage", "Bar selection is not part of this brewery.");
+          return redirect;
+        }
+        account.setBar(bar);
+        account.setBrewery(bar.getBrewery());
+        account.setTaproom(null);
+      }
+      default -> {
+        redirectAttributes.addFlashAttribute(
+            "errorMessage", "Unsupported role selection.");
+        return redirect;
+      }
+    }
+
+    users.save(account);
+    redirectAttributes.addFlashAttribute(
+        "successMessage", "User %s created.".formatted(trimmedUsername));
+    return redirect;
+  }
+
+  @PostMapping("/users/{userId}/delete")
+  public String deleteScopedUser(
+      @PathVariable Long userId,
+      @AuthenticationPrincipal CurrentUser currentUser,
+      RedirectAttributes redirectAttributes) {
+    String redirect = "redirect:/admin/brewery?tab=users";
+    Long breweryId = currentUser != null ? currentUser.getBreweryId() : null;
+    if (breweryId == null) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Unable to determine brewery context for deletion.");
+      return redirect;
+    }
+    if (currentUser.getId().equals(userId)) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "You cannot delete your own account while signed in.");
+      return redirect;
+    }
+    users
+        .findById(userId)
+        .ifPresentOrElse(
+            user -> {
+              if (!belongsToBrewery(user, breweryId)) {
+                redirectAttributes.addFlashAttribute(
+                    "errorMessage", "User does not belong to this brewery.");
+                return;
+              }
+              users.delete(user);
+              redirectAttributes.addFlashAttribute(
+                  "successMessage", "User %s removed.".formatted(user.getUsername()));
+            },
+            () ->
+                redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Could not find the requested user."));
+    return redirect;
+  }
+
   private boolean isTestProfileActive() {
     try {
       for (String p : env.getActiveProfiles()) if ("test".equalsIgnoreCase(p)) return true;
     } catch (Exception ignored) {
+    }
+    return false;
+  }
+
+  private boolean belongsToBrewery(UserAccount user, Long breweryId) {
+    if (user.getBrewery() != null && breweryId.equals(user.getBrewery().getId())) {
+      return true;
+    }
+    if (user.getTaproom() != null
+        && user.getTaproom().getBrewery() != null
+        && breweryId.equals(user.getTaproom().getBrewery().getId())) {
+      return true;
+    }
+    if (user.getBar() != null
+        && user.getBar().getBrewery() != null
+        && breweryId.equals(user.getBar().getBrewery().getId())) {
+      return true;
     }
     return false;
   }

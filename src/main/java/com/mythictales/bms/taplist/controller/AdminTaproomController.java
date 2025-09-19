@@ -5,20 +5,26 @@ import java.util.List;
 import org.springframework.core.env.Environment;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mythictales.bms.taplist.domain.Beer;
+import com.mythictales.bms.taplist.domain.Role;
 import com.mythictales.bms.taplist.domain.KegEvent;
 import com.mythictales.bms.taplist.domain.KegSizeSpec;
 import com.mythictales.bms.taplist.domain.KegStatus;
 import com.mythictales.bms.taplist.domain.Tap;
+import com.mythictales.bms.taplist.domain.Taproom;
 import com.mythictales.bms.taplist.domain.Venue;
 import com.mythictales.bms.taplist.domain.VenueType;
+import com.mythictales.bms.taplist.domain.UserAccount;
 import com.mythictales.bms.taplist.repo.BeerRepository;
 import com.mythictales.bms.taplist.repo.KegEventRepository;
 import com.mythictales.bms.taplist.repo.KegRepository;
@@ -33,6 +39,9 @@ import com.mythictales.bms.taplist.security.CurrentUser;
 @RequestMapping("/admin/taproom")
 public class AdminTaproomController {
 
+  private static final List<Role> TAPROOM_ALLOWED_ROLES =
+      List.of(Role.TAPROOM_ADMIN, Role.TAPROOM_USER);
+
   private final TapRepository taps;
   private final KegRepository kegs;
   private final TaproomRepository taprooms;
@@ -42,6 +51,7 @@ public class AdminTaproomController {
   private final BeerRepository beers;
   private final KegSizeSpecRepository sizes;
   private final Environment env;
+  private final PasswordEncoder passwordEncoder;
 
   public AdminTaproomController(
       TapRepository taps,
@@ -52,7 +62,8 @@ public class AdminTaproomController {
       UserAccountRepository users,
       BeerRepository beers,
       KegSizeSpecRepository sizes,
-      Environment env) {
+      Environment env,
+      PasswordEncoder passwordEncoder) {
     this.taps = taps;
     this.kegs = kegs;
     this.taprooms = taprooms;
@@ -62,6 +73,7 @@ public class AdminTaproomController {
     this.beers = beers;
     this.sizes = sizes;
     this.env = env;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN','BAR_ADMIN')")
@@ -206,10 +218,134 @@ public class AdminTaproomController {
     // Users assigned to this taproom
     model.addAttribute("taproomUsers", users.findByTaproomId(effectiveTaproomId));
     taprooms.findById(effectiveTaproomId).ifPresent(t -> model.addAttribute("taproom", t));
+    model.addAttribute("taproomUserRoles", TAPROOM_ALLOWED_ROLES);
 
     model.addAttribute("tab", tab);
     model.addAttribute("backToBrewery", taproomIdParam != null || "brewery".equalsIgnoreCase(from));
     return "admin/taproom";
+  }
+
+  @PostMapping("/users")
+  public String createTaproomUser(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestParam String username,
+      @RequestParam String password,
+      @RequestParam Role role,
+      @RequestParam(name = "taproomId", required = false) Long taproomIdParam,
+      @RequestParam(name = "from", required = false) String from,
+      RedirectAttributes redirectAttributes) {
+    String redirect = buildTaproomRedirect(taproomIdParam, from);
+    if (!TAPROOM_ALLOWED_ROLES.contains(role)) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Taproom users can only be created with taproom roles.");
+      return redirect;
+    }
+    if (currentUser != null && currentUser.getRole() == Role.BAR_ADMIN) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Bar admins cannot manage taproom users.");
+      return redirect;
+    }
+    Long effectiveTaproomId =
+        currentUser != null && currentUser.getTaproomId() != null
+            ? currentUser.getTaproomId()
+            : taproomIdParam;
+    if (effectiveTaproomId == null) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Unable to determine taproom context for new user.");
+      return redirect;
+    }
+
+    Taproom taproom = taprooms.findById(effectiveTaproomId).orElse(null);
+    if (taproom == null) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Taproom not found.");
+      return redirect;
+    }
+    if (currentUser != null
+        && currentUser.getRole() == Role.BREWERY_ADMIN
+        && (taproom.getBrewery() == null
+            || !currentUser.getBreweryId().equals(taproom.getBrewery().getId()))) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Taproom does not belong to your brewery.");
+      return redirect;
+    }
+
+    String trimmedUsername = username == null ? "" : username.trim();
+    if (trimmedUsername.isEmpty() || password == null || password.isBlank()) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Username and password are required to create a user.");
+      return redirect;
+    }
+    if (users.findByUsername(trimmedUsername).isPresent()) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Username already exists. Choose another." );
+      return redirect;
+    }
+
+    UserAccount account = new UserAccount();
+    account.setUsername(trimmedUsername);
+    account.setPassword(passwordEncoder.encode(password));
+    account.setRole(role);
+    account.setTaproom(taproom);
+    account.setBrewery(taproom.getBrewery());
+    account.setBar(null);
+
+    users.save(account);
+    redirectAttributes.addFlashAttribute(
+        "successMessage", "User %s created.".formatted(trimmedUsername));
+    return redirect;
+  }
+
+  @PostMapping("/users/{userId}/delete")
+  public String deleteTaproomUser(
+      @PathVariable Long userId,
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestParam(name = "taproomId", required = false) Long taproomIdParam,
+      @RequestParam(name = "from", required = false) String from,
+      RedirectAttributes redirectAttributes) {
+    String redirect = buildTaproomRedirect(taproomIdParam, from);
+    Long effectiveTaproomId =
+        currentUser != null && currentUser.getTaproomId() != null
+            ? currentUser.getTaproomId()
+            : taproomIdParam;
+    if (effectiveTaproomId == null) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "Unable to determine taproom context for deletion.");
+      return redirect;
+    }
+    if (currentUser != null && currentUser.getId().equals(userId)) {
+      redirectAttributes.addFlashAttribute(
+          "errorMessage", "You cannot delete your own account while signed in.");
+      return redirect;
+    }
+    users
+        .findById(userId)
+        .ifPresentOrElse(
+            user -> {
+              if (user.getTaproom() == null
+                  || user.getTaproom().getId() == null
+                  || !user.getTaproom().getId().equals(effectiveTaproomId)) {
+                redirectAttributes.addFlashAttribute(
+                    "errorMessage", "User does not belong to this taproom.");
+                return;
+              }
+              if (currentUser != null
+                  && currentUser.getRole() == Role.BREWERY_ADMIN
+                  && user.getTaproom().getBrewery() != null
+                  && currentUser.getBreweryId() != null
+                  && !currentUser.getBreweryId().equals(user.getTaproom().getBrewery().getId())) {
+                redirectAttributes.addFlashAttribute(
+                    "errorMessage", "User does not belong to your brewery.");
+                return;
+              }
+              users.delete(user);
+              redirectAttributes.addFlashAttribute(
+                  "successMessage", "User %s removed.".formatted(user.getUsername()));
+            },
+            () ->
+                redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Could not find the requested user."));
+    return redirect;
   }
 
   @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN')")
@@ -247,6 +383,17 @@ public class AdminTaproomController {
     keg.setStatus(KegStatus.RECEIVED);
     kegs.save(keg);
     return "redirect:/admin/taproom";
+  }
+
+  private String buildTaproomRedirect(Long taproomId, String from) {
+    StringBuilder sb = new StringBuilder("redirect:/admin/taproom?tab=users");
+    if (taproomId != null) {
+      sb.append("&taproomId=").append(taproomId);
+    }
+    if (from != null && !from.isBlank()) {
+      sb.append("&from=").append(from);
+    }
+    return sb.toString();
   }
 
   private boolean isTestProfileActive() {
