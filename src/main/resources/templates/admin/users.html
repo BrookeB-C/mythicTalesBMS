@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/app :: layout('User Access', 'users', 'Admin view of accounts, roles, and brewery affiliations.', ~{::section[@id='page-content']})}">
+      th:replace="~{layouts/app :: layout('User Access Control Center', 'users', 'Admin view of accounts, roles, and brewery affiliations.', ~{::section[@id='page-content']})}">
 <section id="page-content">
+  <section class="page-section">
+    <div class="control-links">
+      <a class="control-link active" th:href="@{/admin/users}">Directory</a>
+      <a class="control-link" th:href="@{/admin/site}">Site Control Center</a>
+    </div>
+  </section>
+
   <section class="page-section">
     <div class="card-grid">
       <article class="metric-card">
