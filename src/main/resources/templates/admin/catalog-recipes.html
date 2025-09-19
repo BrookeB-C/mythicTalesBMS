@@ -18,6 +18,54 @@
   <section class="page-section">
     <div class="section-heading">
       <div>
+        <h2>Import recipes</h2>
+        <p class="muted">Upload BeerXML or BeerSmith XML to add to your library.</p>
+      </div>
+    </div>
+
+    <div class="alert" th:if="${importSuccessCount != null}">
+      <p>
+        <strong th:text="${'Imported ' + importSuccessCount + (importSuccessCount == 1 ? ' recipe.' : ' recipes.')}">
+          Imported 0 recipes.
+        </strong>
+      </p>
+      <p class="muted" th:if="${importForce}">Duplicates were overwritten during this import.</p>
+    </div>
+
+    <div class="alert" th:if="${importError != null}">
+      <p><strong>Import issue.</strong></p>
+      <p th:text="${importError}">Problem message.</p>
+      <p th:if="${importDuplicateId != null}">
+        Existing record:
+        <a th:href="@{'/admin/catalog/recipes/' + ${importDuplicateId}}">View recipe</a>.
+      </p>
+    </div>
+
+    <form method="post"
+          th:action="@{/admin/catalog/recipes/import}"
+          enctype="multipart/form-data"
+          class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <div class="form-group">
+        <label for="recipeFile">Recipe file</label>
+        <input id="recipeFile" name="file" type="file" accept=".xml" required />
+        <p class="muted">Supports BeerXML or BeerSmith exports up to 2MB.</p>
+      </div>
+      <div class="form-group">
+        <label>Overwrite duplicates
+          <input type="checkbox" name="force" th:checked="${importForce}" />
+        </label>
+        <p class="muted">Skips duplicate checks and replaces matching recipes.</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Import recipes</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
         <h2>Recipe library</h2>
         <p class="muted">Search across brewery recipes and jump into detailed edits.</p>
       </div>

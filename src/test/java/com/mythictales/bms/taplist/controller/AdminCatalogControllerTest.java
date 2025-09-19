@@ -1,34 +1,43 @@
 package com.mythictales.bms.taplist.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import com.mythictales.bms.taplist.catalog.domain.Recipe;
 import com.mythictales.bms.taplist.catalog.repo.RecipeRepository;
+import com.mythictales.bms.taplist.catalog.service.RecipeImportService;
+import com.mythictales.bms.taplist.catalog.service.RecipeImportService.DuplicateRecipeException;
+import com.mythictales.bms.taplist.domain.Brewery;
 
 /** Basic controller tests for recipe export and simple child add/remove flows. */
 public class AdminCatalogControllerTest {
 
   private RecipeRepository repo;
+  private RecipeImportService importer;
   private MockMvc mvc;
 
   @BeforeEach
   void setup() {
     repo = Mockito.mock(RecipeRepository.class);
+    importer = Mockito.mock(RecipeImportService.class);
     mvc =
-        MockMvcBuilders.standaloneSetup(new AdminCatalogController(repo))
+        MockMvcBuilders.standaloneSetup(new AdminCatalogController(repo, importer))
             .setCustomArgumentResolvers(
                 new org.springframework.security.web.method.annotation
                     .AuthenticationPrincipalArgumentResolver())
@@ -97,12 +106,69 @@ public class AdminCatalogControllerTest {
     verify(repo, times(1)).save(any());
   }
 
-  private org.springframework.security.core.userdetails.UserDetails dummyUser() {
+  @Test
+  void importRecipes_success_setsFlashAttributes() throws Exception {
+    AdminCatalogController controller = new AdminCatalogController(repo, importer);
+    MockMultipartFile file =
+        new MockMultipartFile(
+            "file",
+            "recipe.xml",
+            "application/xml",
+            "<RECIPES></RECIPES>".getBytes(StandardCharsets.UTF_8));
+    when(importer.importXml(eq(42L), anyString(), eq(false))).thenReturn(java.util.List.of(11L));
+
+    RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
+
+    String view = controller.importRecipes(dummyUser(), file, false, redirect);
+
+    org.junit.jupiter.api.Assertions.assertEquals("redirect:/admin/catalog/recipes", view);
+    org.junit.jupiter.api.Assertions.assertEquals(
+        1, redirect.getFlashAttributes().get("importSuccessCount"));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        false, redirect.getFlashAttributes().get("importForce"));
+    verify(importer).importXml(eq(42L), anyString(), eq(false));
+  }
+
+  @Test
+  void importRecipes_duplicateSetsError() throws Exception {
+    AdminCatalogController controller = new AdminCatalogController(repo, importer);
+    MockMultipartFile file =
+        new MockMultipartFile(
+            "file", "recipe.xml", "application/xml", "<r/>".getBytes(StandardCharsets.UTF_8));
+
+    doThrow(new DuplicateRecipeException(7L))
+        .when(importer)
+        .importXml(eq(42L), anyString(), eq(false));
+
+    RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
+
+    String view = controller.importRecipes(dummyUser(), file, false, redirect);
+
+    org.junit.jupiter.api.Assertions.assertEquals("redirect:/admin/catalog/recipes", view);
+    org.junit.jupiter.api.Assertions.assertEquals(
+        7L, redirect.getFlashAttributes().get("importDuplicateId"));
+    org.junit.jupiter.api.Assertions.assertTrue(
+        redirect.getFlashAttributes().containsKey("importError"));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        false, redirect.getFlashAttributes().get("importForce"));
+  }
+
+  private com.mythictales.bms.taplist.security.CurrentUser dummyUser() {
     com.mythictales.bms.taplist.domain.UserAccount ua =
         new com.mythictales.bms.taplist.domain.UserAccount(
             "tester", "pw", com.mythictales.bms.taplist.domain.Role.SITE_ADMIN);
+    Brewery brewery = new Brewery("Test Brewery");
+    try {
+      java.lang.reflect.Field bf = Brewery.class.getDeclaredField("id");
+      bf.setAccessible(true);
+      bf.set(brewery, 42L);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    ua.setBrewery(brewery);
     com.mythictales.bms.taplist.security.CurrentUser cu =
         new com.mythictales.bms.taplist.security.CurrentUser(ua);
+    org.junit.jupiter.api.Assertions.assertNotNull(cu.getBreweryId());
     return cu;
   }
 }
