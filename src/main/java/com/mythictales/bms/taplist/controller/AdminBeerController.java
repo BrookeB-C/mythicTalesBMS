@@ -73,6 +73,11 @@ public class AdminBeerController {
     model.addAttribute("stylesByCategory", stylesByCategory);
     model.addAttribute("year", year);
     model.addAttribute("q", q);
+    model.addAttribute("beerCount", beerList.size());
+    model.addAttribute(
+        "linkedBeerCount", beerList.stream().filter(b -> b.getStyleRef() != null).count());
+    model.addAttribute("styleCategoryCount", stylesByCategory.size());
+    model.addAttribute("styleOptionCount", styleList.size());
     return "admin/beer";
   }
 

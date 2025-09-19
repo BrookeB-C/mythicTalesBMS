@@ -1,0 +1,78 @@
+<div th:fragment="story">
+  <section class="story-section">
+    <h2>Modal Dialog</h2>
+    <div class="modal-preview">
+      <div class="modal-window">
+        <header>
+          <h3>Schedule Transfer</h3>
+          <span class="modal-meta">Batch BR-2025-091</span>
+        </header>
+        <div class="modal-body">
+          <p>Confirm the transfer to the bright tank. Notify packaging when the schedule is locked.</p>
+          <div class="modal-checklist">
+            <label><input type="checkbox" checked /> QA sign-off recorded</label>
+            <label><input type="checkbox" /> Cellar temperature adjusted</label>
+            <label><input type="checkbox" /> Distribution notified</label>
+          </div>
+        </div>
+        <footer>
+          <button class="story-btn btn-ghost">Cancel</button>
+          <button class="story-btn btn-primary">Confirm transfer</button>
+        </footer>
+      </div>
+    </div>
+  </section>
+
+  <section class="story-section">
+    <h2>Slide-over Panel</h2>
+    <div class="slideover-preview">
+      <aside class="slideover">
+        <header>
+          <div>
+            <h3>Taproom Snapshot</h3>
+            <p class="muted">Dockside Taproom • Updated 5 minutes ago</p>
+          </div>
+          <button class="slideover-close">×</button>
+        </header>
+        <div class="slideover-body">
+          <dl>
+            <div>
+              <dt>Active taps</dt>
+              <dd>18 / 24</dd>
+            </div>
+            <div>
+              <dt>Low keg alerts</dt>
+              <dd><span class="metric-pill warning">3</span></dd>
+            </div>
+            <div>
+              <dt>Events tonight</dt>
+              <dd>Tap takeover at 7:00 PM</dd>
+            </div>
+          </dl>
+        </div>
+        <footer>
+          <button class="story-btn btn-secondary">View taproom</button>
+          <button class="story-btn btn-ghost">Mute alerts</button>
+        </footer>
+      </aside>
+    </div>
+  </section>
+
+  <section class="story-section">
+    <h2>Toast Notifications</h2>
+    <div class="toast-stack">
+      <div class="toast success">
+        <strong>Batch scheduled</strong>
+        <span>Transfer BR-2025-091 moved to 14:00 today.</span>
+      </div>
+      <div class="toast warning">
+        <strong>Low keg alert</strong>
+        <span>Tap 12 at Riverfront is below 8% capacity.</span>
+      </div>
+      <div class="toast critical">
+        <strong>Compliance hold</strong>
+        <span>QC sample missing for batch BR-2025-086.</span>
+      </div>
+    </div>
+  </section>
+</div>

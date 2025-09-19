@@ -53,6 +53,7 @@ public class AdminCatalogController {
     }
     model.addAttribute("recipes", list);
     model.addAttribute("q", q);
+    model.addAttribute("recipeCount", list.size());
     return "admin/catalog-recipes";
   }
 
@@ -67,6 +68,11 @@ public class AdminCatalogController {
       }
     }
     model.addAttribute("recipe", r);
+    model.addAttribute("fermentableCount", r.getFermentables().size());
+    model.addAttribute("hopCount", r.getHops().size());
+    model.addAttribute("yeastCount", r.getYeasts().size());
+    model.addAttribute("miscCount", r.getMiscs().size());
+    model.addAttribute("mashStepCount", r.getMashSteps().size());
     return "admin/catalog-recipe-edit";
   }
 

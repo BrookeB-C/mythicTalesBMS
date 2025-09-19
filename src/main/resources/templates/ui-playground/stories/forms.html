@@ -1,0 +1,68 @@
+<div th:fragment="story">
+  <section class="story-section">
+    <h2>Form Controls</h2>
+    <form class="storybook-form">
+      <div class="form-group">
+        <label for="brew-name">Brew Name</label>
+        <input id="brew-name" type="text" value="Mythic Pilsner" />
+        <p class="field-hint">Visible to all taprooms in the brewery network.</p>
+      </div>
+      <div class="form-group">
+        <label for="status">Batch Status</label>
+        <div class="select-wrap">
+          <select id="status">
+            <option>Fermenting</option>
+            <option>Conditioning</option>
+            <option>Packaging</option>
+            <option>Cellared</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="volume">Planned Volume (bbl)</label>
+          <input id="volume" type="number" value="30" />
+        </div>
+        <div class="form-group">
+          <label for="temp">Target Temp (°F)</label>
+          <input id="temp" type="number" value="68" />
+        </div>
+        <div class="form-group">
+          <label for="target-date">Transfer Date</label>
+          <input id="target-date" type="date" value="2025-10-12" />
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="story-section">
+    <h2>Validation States</h2>
+    <div class="form-grid">
+      <div class="form-group has-error">
+        <label for="gravity">Original Gravity</label>
+        <input id="gravity" type="text" value="" placeholder="e.g., 1.056" />
+        <p class="field-error">Gravity reading required before starting the brew run.</p>
+      </div>
+      <div class="form-group has-warning">
+        <label for="abv">ABV (calculated)</label>
+        <input id="abv" type="text" value="8.4%" />
+        <p class="field-warning">ABV exceeds style guideline by 1.2%.</p>
+      </div>
+      <div class="form-group has-success">
+        <label for="ph">pH Reading</label>
+        <input id="ph" type="text" value="4.3" />
+        <p class="field-success">Within range for this recipe.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="story-section">
+    <h2>Filter Chips</h2>
+    <div class="filter-chip-row">
+      <button class="filter-chip active">Active Batches<i></i></button>
+      <button class="filter-chip">Needs QA<i></i></button>
+      <button class="filter-chip">Distribution Hold<i></i></button>
+      <button class="filter-chip">Past Due<i></i></button>
+    </div>
+  </section>
+</div>
