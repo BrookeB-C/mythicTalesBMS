@@ -12,4 +12,4 @@
 
 ## Notes
 - Cards now link to associated list pages; inline control menu replaces tab strips.
-- Default view shows only cards + brewery details; lists render when `tab` query is provided.
+- Default view now shows cards plus the taproom list; control menu links route to other lists via `tab` query.
