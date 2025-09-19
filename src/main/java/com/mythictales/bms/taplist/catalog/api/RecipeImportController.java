@@ -1,6 +1,5 @@
 package com.mythictales.bms.taplist.catalog.api;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -81,12 +80,15 @@ public class RecipeImportController {
       if (ct != null
           && !(ct.equalsIgnoreCase(MediaType.APPLICATION_XML_VALUE)
               || ct.equalsIgnoreCase(MediaType.TEXT_XML_VALUE)
-              || ct.equalsIgnoreCase("application/octet-stream"))) {
+              || ct.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM_VALUE)
+              || ct.equalsIgnoreCase("application/zip")
+              || ct.equalsIgnoreCase("application/x-zip")
+              || ct.equalsIgnoreCase("application/x-zip-compressed"))) {
         throw new BusinessValidationException(
             "Unsupported content type", Map.of("contentType", ct));
       }
-      String xml = new String(file.getBytes(), StandardCharsets.UTF_8);
-      List<Long> ids = importer.importXml(breweryId, xml, force);
+      List<Long> ids =
+          importer.importFile(breweryId, file.getBytes(), file.getOriginalFilename(), force);
       return ResponseEntity.ok(new ImportResponse(ids));
     } catch (DuplicateRecipeException dup) {
       return ResponseEntity.status(HttpStatus.CONFLICT)
