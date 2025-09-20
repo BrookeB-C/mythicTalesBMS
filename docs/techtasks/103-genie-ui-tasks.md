@@ -1,10 +1,15 @@
 # Genie UI — Taproom Ops & Big‑Board Tasks
 
-Scope: Thymeleaf MVC, client‑side enhancements (AJAX, QR scanning), responsive/mobile, accessibility.
+Scope: Thymeleaf MVC, client-side enhancements (AJAX, QR scanning), responsive/mobile, accessibility.
+
+## P0 — Enterprise Desktop Shell & Component Library
+- Stand up the web component library (`docs/features/enterprise-component-library.md`) with design tokens and `mt-app-shell` foundations.
+- Port the prototype landing grid (Hero KPIs, Operational Queue, Recent Activity, Quick Actions) into reusable Lit components with Storybook docs.
+- Integrate the new shell bundle into one Thymeleaf view for validation; capture accessibility and performance results.
 
 ## Sprint 1 — Board & Indicators
-- Big‑board route
-  - Add `GET /taplist/board?venueId=...` (read‑only, no auth prompts beyond session)
+- Big-board route
+  - Add `GET /taplist/board?venueId=...` (read-only, no auth prompts beyond session)
   - Auto‑refresh every 15s (config: `bms.ui.bigboard.refreshSeconds`)
   - Fields: beer name, style, ABV, fill %, low‑volume indicator at configured threshold
   - Responsive layout suitable for TV displays
