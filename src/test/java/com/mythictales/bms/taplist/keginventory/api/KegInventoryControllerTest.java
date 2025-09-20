@@ -35,7 +35,10 @@ class KegInventoryControllerTest extends BaseApiControllerTest {
         new KegInventoryController(
             service,
             org.mockito.Mockito.mock(
-                com.mythictales.bms.taplist.keginventory.repo.KegMovementHistoryRepository.class));
+                com.mythictales.bms.taplist.keginventory.repo.KegMovementHistoryRepository.class),
+            org.mockito.Mockito.mock(com.mythictales.bms.taplist.repo.KegRepository.class),
+            org.mockito.Mockito.mock(
+                com.mythictales.bms.taplist.repo.KegPlacementRepository.class));
     mvc = buildMvc(controller);
   }
 

@@ -1,46 +1,60 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title th:text="'Keg Event Log — ' + ${venue.name}">Keg Event Log</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}"/>
-</head>
-<body>
-<div class="container">
-    <header>
-        <h1 th:text="'Keg Event Log — ' + ${venue.name}">Keg Event Log</h1>
-        <div class="toolbar">
-            <a class="btn" th:href="@{'/admin/venue/' + ${venue.id}}">⟵ Back to Venue Admin</a>
-            <a class="btn ghost" th:href="@{'/taplist?venueId=' + ${venue.id}}">View Taplist</a>
-        </div>
-    </header>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout(${'Keg Events · ' + (venue != null ? venue.name : 'Venue')}, 'taproom', 'Audit trail for pours, blows, and maintenance at this venue.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Total events</h3>
+          <span class="metric-pill success" th:text="${events != null ? events.size() : 0} + ' recorded'">0 recorded</span>
+        </header>
+        <div class="metric-value" th:text="${events != null ? events.size() : 0}">0</div>
+        <footer class="muted">Taproom activity captured for this venue.</footer>
+      </article>
+    </div>
+  </section>
 
-    <div class="alert muted" th:if="${#lists.isEmpty(events)}">No events yet.</div>
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2 th:text="${venue != null ? venue.name : 'Venue events'}">Venue events</h2>
+        <p class="muted">Use the event log to understand pours, low alerts, and keg swaps.</p>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" th:href="@{'/admin/venue/' + ${venue.id}}">Back to venue</a>
+        <a class="btn ghost" th:href="@{'/taplist?venueId=' + ${venue.id}}">View taplist</a>
+      </div>
+    </div>
 
-    <table class="table" th:if="${!#lists.isEmpty(events)}">
+    <div class="alert" th:if="${#lists.isEmpty(events)}">No events have been recorded yet.</div>
+
+    <div class="table-wrapper" th:if="${!#lists.isEmpty(events)}">
+      <table class="table">
         <thead>
         <tr>
-            <th>Time</th>
-            <th>Tap</th>
-            <th>Event</th>
-            <th>Ounces</th>
-            <th>Beer</th>
-            <th>Keg</th>
-            <th>By</th>
+          <th>Time</th>
+          <th>Tap</th>
+          <th>Event</th>
+          <th>Ounces</th>
+          <th>Beer</th>
+          <th>Keg</th>
+          <th>Actor</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="e : ${events}">
-            <td th:text="${e.atTime}">2025-01-01T00:00:00Z</td>
-            <td th:text="${e.placement.tap.number}">1</td>
-            <td th:text="${e.type}">POUR</td>
-            <td th:text="${e.ounces} ?: '-'">16</td>
-            <td th:text="${e.placement.keg.beer.name}">IPA</td>
-            <td th:text="${e.placement.keg.id}">42</td>
-            <td th:text="${e.actor != null ? e.actor.username : '—'}">—</td>
+          <td th:text="${e.atTime}">2025-01-01T00:00:00Z</td>
+          <td th:text="${e.placement.tap.number}">1</td>
+          <td><span class="badge blue" th:text="${e.type}">POUR</span></td>
+          <td th:text="${e.ounces} ?: '-'">16</td>
+          <td th:text="${e.placement.keg.beer.name}">IPA</td>
+          <td th:text="${e.placement.keg.id}">42</td>
+          <td th:text="${e.actor != null ? e.actor.username : '—'}">—</td>
         </tr>
         </tbody>
-    </table>
-</div>
-</body>
+      </table>
+    </div>
+  </section>
+</section>
 </html>

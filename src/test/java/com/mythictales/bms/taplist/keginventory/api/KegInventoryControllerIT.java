@@ -216,4 +216,84 @@ class KegInventoryControllerIT {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].kegId", is(keg.getId().intValue())));
   }
+
+  @Test
+  void history_with_time_range_filters() throws Exception {
+    Brewery stone = breweries.findAll().stream().findFirst().orElseThrow();
+    Venue venue =
+        venues
+            .findFirstByBreweryIdAndType(stone.getId(), VenueType.TAPROOM)
+            .orElseThrow(() -> new RuntimeException("no venue"));
+    Keg keg =
+        kegs
+            .findByBreweryIdAndAssignedVenueIsNullAndStatus(stone.getId(), KegStatus.FILLED)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no FILLED unassigned keg"));
+
+    // Create movements (assign + receive)
+    mvc.perform(
+            post("/api/v1/keg-inventory/assign")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(new AssignRequest(keg.getId(), venue.getId()))))
+        .andExpect(status().isOk());
+    mvc.perform(
+            post("/api/v1/keg-inventory/receive")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(new ReceiveRequest(keg.getId(), venue.getId()))))
+        .andExpect(status().isOk());
+
+    // Now query within a broad range expected to include the new entries
+    String from = java.time.Instant.now().minus(java.time.Duration.ofHours(1)).toString();
+    String to = java.time.Instant.now().plus(java.time.Duration.ofHours(1)).toString();
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/v1/keg-inventory/history")
+                .with(user(principalFor(stone)))
+                .param("kegId", String.valueOf(keg.getId()))
+                .param("from", from)
+                .param("to", to)
+                .param("size", "5"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].kegId", is(keg.getId().intValue())));
+
+    // Query a future range that should be empty
+    String fFrom = java.time.Instant.now().plus(java.time.Duration.ofDays(1)).toString();
+    String fTo = java.time.Instant.now().plus(java.time.Duration.ofDays(2)).toString();
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/v1/keg-inventory/history")
+                .with(user(principalFor(stone)))
+                .param("kegId", String.valueOf(keg.getId()))
+                .param("from", fFrom)
+                .param("to", fTo)
+                .param("size", "5"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isEmpty());
+  }
+
+  @Test
+  void assign_external_sets_distributed() throws Exception {
+    Brewery stone = breweries.findAll().stream().findFirst().orElseThrow();
+    Keg keg =
+        kegs
+            .findByBreweryIdAndAssignedVenueIsNullAndStatus(stone.getId(), KegStatus.FILLED)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no FILLED unassigned keg"));
+
+    String body = "{\n  \"kegId\": " + keg.getId() + ", \"partner\": \"Acme Distributor\"\n}";
+    mvc.perform(
+            post("/api/v1/keg-inventory/assignExternal")
+                .with(user(principalFor(stone)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status", is("DISTRIBUTED")));
+  }
 }

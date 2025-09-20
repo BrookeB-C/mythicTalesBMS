@@ -1,39 +1,120 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Catalog — Recipes</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}"/>
-  <style>.row-actions{white-space:nowrap}</style>
-  </head>
-<body>
-<header>
-  <h1>Catalog — Recipes</h1>
-  <p><a class="btn ghost" th:href="@{/admin/brewery(tab='catalog')}">⟵ Back to Brewery</a></p>
-  <form method="get" th:action="@{/admin/catalog/recipes}" class="inline" style="margin:.5rem 0;">
-    <input name="q" placeholder="Search by name or style…" th:value="${q}"/>
-    <button class="btn" type="submit">Search</button>
-  </form>
-</header>
-<main>
-  <table class="table">
-    <thead>
-      <tr><th>Name</th><th>Style</th><th>Type</th><th>Batch (L)</th><th>Boil (min)</th><th class="actions">Actions</th></tr>
-    </thead>
-    <tbody>
-      <tr th:each="r : ${recipes}">
-        <td th:text="${r.name}">Name</td>
-        <td th:text="${r.styleName}">Style</td>
-        <td th:text="${r.type}">Type</td>
-        <td th:text="${r.batchSizeLiters}">20</td>
-        <td th:text="${r.boilTimeMinutes}">60</td>
-        <td class="actions row-actions">
-          <a class="btn" th:href="@{'/admin/catalog/recipes/' + ${r.id}}">Edit</a>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</main>
-<div th:replace="~{fragments/footer :: footer}"></div>
-</body>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout('Recipe Catalog', 'recipes', 'Brewery recipes and production metadata.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Total recipes</h3>
+          <span class="metric-pill success" th:text="${recipeCount} + ' on file'">0 on file</span>
+        </header>
+        <div class="metric-value" th:text="${recipeCount}">0</div>
+        <footer class="muted">Visible to your brewery team.</footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Import recipes</h2>
+        <p class="muted">Upload BeerXML or BeerSmith XML to add to your library.</p>
+      </div>
+    </div>
+
+    <div class="alert" th:if="${importSuccessCount != null}">
+      <p>
+        <strong th:text="${'Imported ' + importSuccessCount + (importSuccessCount == 1 ? ' recipe.' : ' recipes.')}">
+          Imported 0 recipes.
+        </strong>
+      </p>
+      <p class="muted" th:if="${importForce}">Duplicates were overwritten during this import.</p>
+    </div>
+
+    <div class="alert" th:if="${importError != null}">
+      <p><strong>Import issue.</strong></p>
+      <p th:text="${importError}">Problem message.</p>
+      <p th:if="${importDuplicateId != null}">
+        Existing record:
+        <a th:href="@{'/admin/catalog/recipes/' + ${importDuplicateId}}">View recipe</a>.
+      </p>
+    </div>
+
+    <form method="post"
+          th:action="@{/admin/catalog/recipes/import}"
+          enctype="multipart/form-data"
+          class="form-grid">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <div class="form-group">
+        <label for="recipeFile">Recipe file</label>
+        <input id="recipeFile" name="file" type="file" accept=".xml,.bsmx" required />
+        <p class="muted">Supports BeerXML (.xml) or BeerSmith (.bsmx) exports up to 2MB.</p>
+      </div>
+      <div class="form-group">
+        <label>Overwrite duplicates
+          <input type="checkbox" name="force" th:checked="${importForce}" />
+        </label>
+        <p class="muted">Skips duplicate checks and replaces matching recipes.</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Import recipes</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Recipe library</h2>
+        <p class="muted">Search across brewery recipes and jump into detailed edits.</p>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" th:href="@{/admin/brewery(tab='catalog')}">Back to brewery</a>
+      </div>
+    </div>
+
+    <form method="get" th:action="@{/admin/catalog/recipes}" class="form-inline">
+      <div class="form-group">
+        <label for="recipeSearch">Search</label>
+        <input id="recipeSearch" name="q" placeholder="Name or style…" th:value="${q}" />
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Run search</button>
+      </div>
+    </form>
+
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Style</th>
+            <th>Type</th>
+            <th>Batch (L)</th>
+            <th>Boil (min)</th>
+            <th aria-label="Actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="r : ${recipes}">
+            <td th:text="${r.name}">Name</td>
+            <td th:text="${r.styleName}">Style</td>
+            <td>
+              <span class="badge blue" th:text="${r.type != null ? r.type : '—'}">Type</span>
+            </td>
+            <td th:text="${r.batchSizeLiters}">20</td>
+            <td th:text="${r.boilTimeMinutes}">60</td>
+            <td class="actions">
+              <a class="btn secondary" th:href="@{'/admin/catalog/recipes/' + ${r.id}}">Open</a>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(recipes)}">
+            <td class="muted" colspan="6">No recipes match your search.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
 </html>

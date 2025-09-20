@@ -1,11 +1,16 @@
 package com.mythictales.bms.taplist.catalog.service;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -38,7 +43,15 @@ public class RecipeImportService {
   }
 
   @Transactional
+  public List<Long> importFile(
+      Long breweryId, byte[] payload, String originalFilename, boolean force) {
+    String xml = decodePayload(payload, originalFilename);
+    return importXml(breweryId, xml, force);
+  }
+
+  @Transactional
   public List<Long> importXml(Long breweryId, String xml, boolean force) {
+    xml = stripBom(xml);
     Brewery brewery = breweries.findById(breweryId).orElseThrow();
     try {
       DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
@@ -71,6 +84,46 @@ public class RecipeImportService {
       throw new com.mythictales.bms.taplist.service.BusinessValidationException(
           "Failed to parse recipe XML", java.util.Map.of("reason", "XML_PARSE_ERROR"));
     }
+  }
+
+  static String decodePayload(byte[] payload, String originalFilename) {
+    if (payload == null || payload.length == 0) {
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "Empty file", java.util.Map.of("reason", "EMPTY_FILE"));
+    }
+    String lowerName = originalFilename != null ? originalFilename.toLowerCase(Locale.ROOT) : "";
+    boolean looksZip = payload.length >= 2 && payload[0] == 'P' && payload[1] == 'K';
+    if (looksZip || lowerName.endsWith(".bsmx") || lowerName.endsWith(".zip")) {
+      return unzipFirstEntry(payload);
+    }
+    return stripBom(new String(payload, StandardCharsets.UTF_8));
+  }
+
+  private static String unzipFirstEntry(byte[] payload) {
+    try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(payload))) {
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        if (entry.isDirectory()) {
+          continue;
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        zis.transferTo(out);
+        zis.closeEntry();
+        return stripBom(new String(out.toByteArray(), StandardCharsets.UTF_8));
+      }
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "No XML found in archive", java.util.Map.of("reason", "ZIP_EMPTY"));
+    } catch (IOException e) {
+      throw new com.mythictales.bms.taplist.service.BusinessValidationException(
+          "Failed to read BeerSmith archive", java.util.Map.of("reason", "ZIP_PARSE_ERROR"));
+    }
+  }
+
+  private static String stripBom(String xml) {
+    if (xml != null && !xml.isEmpty() && xml.charAt(0) == '\uFEFF') {
+      return xml.substring(1);
+    }
+    return xml;
   }
 
   private Long importSingleRecipeNode(

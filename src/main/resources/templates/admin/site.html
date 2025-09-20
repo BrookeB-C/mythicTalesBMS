@@ -1,27 +1,105 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8"/>
-    <title>Site Admin</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}"/>
-  </head>
-  <body>
-    <header>
-      <h1>Site Admin</h1>
-    </header>
-    <main>
-      <p>
-        <a class="btn" th:href="@{/admin/users}">Manage Users</a>
-      </p>
-      <h2>Breweries</h2>
-      <ul>
-        <li th:each="b : ${breweries}" th:text="${b.name}">Brewery</li>
-      </ul>
-      <h2>Bars</h2>
-      <ul>
-        <li th:each="b : ${bars}" th:text="${b.name}">Bar</li>
-      </ul>
-    </main>
-    <div th:replace="~{fragments/footer :: footer}"></div>
-  </body>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout('Control Center', 'site', 'Cross-brewery visibility and admin shortcuts for the Mythic Tales network.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Brewery footprint</h3>
+          <span class="metric-pill success" th:text="${breweryCount} + ' total'">0 total</span>
+        </header>
+        <div class="metric-value" th:text="${breweryCount}">0</div>
+        <footer class="muted">Active breweries with <span th:text="${taproomCount}">0</span> taprooms.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Retail partners</h3>
+          <span class="metric-pill warning" th:text="${barCount} + ' total'">0 total</span>
+        </header>
+        <div class="metric-value" th:text="${barCount}">0</div>
+        <footer class="muted">Bars and venues connected to brewing operations.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Distributed kegs</h3>
+          <span class="metric-pill info" th:text="${tappedKegCount} + ' tapped'">0 tapped</span>
+        </header>
+        <div class="metric-value" th:text="${distributedKegCount}">0</div>
+        <footer class="muted">Inventory currently pouring at partner venues.</footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <article class="content-card">
+      <header>
+        <div>
+          <h3>Quick actions</h3>
+          <p class="muted">Provision users, sync recipes, or onboard a new venue.</p>
+        </div>
+      </header>
+      <div class="actions">
+        <a class="btn primary" th:href="@{/admin/users}">Manage user access</a>
+        <a class="btn secondary" th:href="@{/admin/catalog/recipes}">Review recipes</a>
+        <a class="btn ghost" th:href="@{/admin/brewery}">Add brewery</a>
+        <a class="btn ghost" th:href="@{/admin/bar}">Invite bar partner</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Breweries</h2>
+        <p class="muted">List of breweries configured in the platform.</p>
+      </div>
+    </div>
+    <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="b : ${breweries}">
+          <td th:text="${b.name}">Brewery Name</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(breweries)}">
+          <td class="muted">No breweries configured yet.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Bars &amp; venues</h2>
+        <p class="muted">Connected retail locations by name.</p>
+      </div>
+    </div>
+    <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Brewery</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="b : ${bars}">
+          <td th:text="${b.name}">Bar Name</td>
+          <td th:text="${b.brewery != null ? b.brewery.name : '-'}">Brewery</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(bars)}">
+          <td colspan="2" class="muted">No bar partners on file.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+</section>
 </html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Taplist — Big Board</title>
+  <meta th:attr="http-equiv='refresh', content=${refreshSeconds}"/>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+  <style>
+    body{background:#0b0e12;color:#e9eef5}
+    header{padding:1rem 2rem}
+    h1{font-size:2rem;margin:0}
+    .board{padding:0 2rem}
+    .row{display:grid;grid-template-columns:80px 1fr 160px;gap:1rem;align-items:center;padding:.6rem 0;border-bottom:1px solid #223041}
+    .tapno{font-size:2rem;color:#a7c0e8;text-align:right}
+    .beer{font-size:1.6rem}
+    .style{font-size:1rem;color:#9db0c9}
+    .status{justify-self:end}
+    .pill{padding:.25rem .6rem;border-radius:999px;background:#1b2533;color:#cfe1ff}
+    .low .pill{background:#41222b;color:#ffd6df}
+  </style>
+  </head>
+<body>
+  <header><h1>Taplist</h1></header>
+  <main class="board">
+    <!-- Prefer projections when present -->
+    <div th:if="${projections != null}" th:each="p : ${projections}" th:classappend="${p.fillPercent != null and p.fillPercent <= 10} ? ' low' : null" class="row">
+      <div class="tapno" th:text="${p.tapId}">1</div>
+      <div>
+        <div class="beer" th:text="${p.beerName != null ? p.beerName : 'Empty'}">Beer</div>
+        <div class="style" th:if="${p.beerName != null}" th:text="${p.style + ' • ' + p.abv + '% ABV'}">Style • ABV</div>
+      </div>
+      <div class="status">
+        <span class="pill" th:if="${p.fillPercent != null}" th:text="${p.fillPercent + '%'}">75%</span>
+        <span class="pill" th:if="${p.fillPercent == null}">EMPTY</span>
+      </div>
+    </div>
+
+    <!-- Fallback to live taps when projections not provided -->
+    <div th:if="${projections == null}" th:each="t : ${taps}" th:classappend="${t.keg != null && t.keg.fillPercent <= 10} ? ' low' : null" class="row">
+      <div class="tapno" th:text="${t.number}">1</div>
+      <div>
+        <div class="beer" th:text="${t.keg != null ? t.keg.beer.name : 'Empty'}">Beer</div>
+        <div class="style" th:if="${t.keg != null}" th:text="${t.keg.beer.style + ' • ' + t.keg.beer.abv + '% ABV'}">Style • ABV</div>
+      </div>
+      <div class="status">
+        <span class="pill" th:if="${t.keg != null}" th:text="${t.keg.fillPercent + '%'}">75%</span>
+        <span class="pill" th:if="${t.keg == null}">EMPTY</span>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

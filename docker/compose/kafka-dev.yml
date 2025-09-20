@@ -1,0 +1,79 @@
+# Dev Kafka (KRaft) with topic bootstrap and UI
+
+services:
+  kafka:
+    image: bitnami/kafka:3.7.0
+    container_name: bms-kafka
+    environment:
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_KRAFT_CLUSTER_ID: ffffffffffffffffffffffffffffffff
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_CFG_NUM_PARTITIONS: 6
+      KAFKA_CFG_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_CFG_OFFSETS_TOPIC_NUM_PARTITIONS: 3
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  topics-init:
+    image: bitnami/kafka:3.7.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    network_mode: service:kafka
+    command:
+      - /bin/bash
+      - -lc
+      - |
+        set -euo pipefail
+        PATH="/opt/bitnami/kafka/bin:$$PATH"
+        BROKER="localhost:9092"
+        create() {
+          kafka-topics.sh --bootstrap-server "$$BROKER" --create --if-not-exists --topic "$$1" --partitions 6 --replication-factor 1
+        }
+        for topic in \
+          prodinventory.events.v1 \
+          keginventory.events.v1 \
+          taproom.events.v1 \
+          catalog.events.v1 \
+          sales.events.v1 \
+          distribution.events.v1 \
+          procurement.events.v1 \
+          maintenance.events.v1 \
+          analytics.events.v1 \
+          billing.events.v1 \
+          compliance.events.v1 \
+          iam.events.v1
+        do
+          create "$$topic"
+        done
+        kafka-topics.sh --bootstrap-server "$$BROKER" --list
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: bms-kafka-ui
+    ports:
+      - "8085:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: dev
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+networks:
+  default:
+    name: bms-dev

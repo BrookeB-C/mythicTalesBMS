@@ -52,6 +52,30 @@ password: ${PRODUCTION_POSTGRES_PASSWORD}
 
 Compose file: `compose.yaml`. Variables are sourced from `.env`.
 
+## Docker Compose — Kafka Dev Stack
+
+Spin up a single-node Kafka (KRaft) broker plus Kafka UI for local development:
+
+```bash
+docker compose -f docker/compose/kafka-dev.yml up -d
+```
+
+The stack provisions all domain topics listed under `bms.kafka.domains` using six partitions and seven-day retention. Visit http://localhost:8085 to browse topics and messages.
+
+Stop the stack when finished:
+
+```bash
+docker compose -f docker/compose/kafka-dev.yml down
+```
+
+Set `BMS_KAFKA_ENABLED=true` (default in the dev profile) so the application boots with the Kafka publisher configuration. Optionally enable the sample publisher for smoke tests:
+
+```bash
+BMS_KAFKA_SAMPLE_ENABLED=true mvn spring-boot:run
+```
+
+The sample runner publishes a `SampleInventoryEvent` into `prodinventory.events.v1` at startup.
+
 ## Spring Profiles — Staging & Production
 
 Profiles are pre-wired to use the Compose Postgres instances:

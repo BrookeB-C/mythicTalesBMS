@@ -1,20 +1,12 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-  <body>
-    <div th:fragment="footer">
-      <footer class="site-footer">
-        <div class="footer-inner">
-          <span>Logged in as </span>
-          <strong th:text="${currentUser != null ? currentUser.username : 'guest'}">guest</strong>
-          <span th:if="${currentUser != null}">
-            • Role:
-            <span th:text="${#strings.replace(currentUser.authorities[0].authority,'ROLE_','')}">ROLE</span>
-          </span>
-          <span style="margin-left:0.75rem" th:if="${#authentication?.authenticated}">
-            <a class="btn ghost" th:href="@{/logout}">Logout</a>
-          </span>
-        </div>
-      </footer>
+<div th:fragment="footer">
+  <footer class="app-footer">
+    <div class="footer-meta">
+      <span th:text="${currentUser != null ? 'Signed in as ' : 'Not signed in'}">Signed in as</span>
+      <strong th:if="${currentUser != null}" th:text="${currentUser.username}">user</strong>
+      <span th:if="${currentUser != null}" class="footer-role" th:text="${#strings.replace(currentUser.authorities[0].authority,'ROLE_','')}">ROLE</span>
     </div>
-  </body>
-</html>
+    <div class="footer-actions" th:if="${#authentication?.authenticated}">
+      <a class="btn ghost" th:href="@{/logout}">Logout</a>
+    </div>
+  </footer>
+</div>

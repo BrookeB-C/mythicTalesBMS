@@ -37,6 +37,7 @@ public class AdminBeerController {
   public String page(
       @AuthenticationPrincipal CurrentUser user,
       @RequestParam(value = "year", required = false, defaultValue = "2015") Integer year,
+      @RequestParam(value = "q", required = false) String q,
       Model model) {
     List<Beer> beerList = new ArrayList<>();
     if (user != null && user.getBreweryId() != null) {
@@ -49,6 +50,11 @@ public class AdminBeerController {
       }
     } else {
       beerList = beers.findAll();
+    }
+    // Optional beer search filter
+    if (q != null && !q.isBlank()) {
+      String qq = q.toLowerCase();
+      beerList.removeIf(b -> b.getName() == null || !b.getName().toLowerCase().contains(qq));
     }
     // Styles filtered by year (client can change year via query param)
     List<BjcpStyle> styleList = styles.findAll();
@@ -66,6 +72,12 @@ public class AdminBeerController {
     model.addAttribute("beers", beerList);
     model.addAttribute("stylesByCategory", stylesByCategory);
     model.addAttribute("year", year);
+    model.addAttribute("q", q);
+    model.addAttribute("beerCount", beerList.size());
+    model.addAttribute(
+        "linkedBeerCount", beerList.stream().filter(b -> b.getStyleRef() != null).count());
+    model.addAttribute("styleCategoryCount", stylesByCategory.size());
+    model.addAttribute("styleOptionCount", styleList.size());
     return "admin/beer";
   }
 
@@ -77,6 +89,16 @@ public class AdminBeerController {
     Beer b = beers.findById(beerId).orElseThrow();
     BjcpStyle style = styles.findById(styleId).orElseThrow();
     b.setStyleRef(style);
+    beers.save(b);
+    return "redirect:/admin/beer?year=" + year;
+  }
+
+  @PostMapping("/{beerId}/style/unlink")
+  public String unlinkStyle(
+      @PathVariable Long beerId,
+      @RequestParam(value = "year", required = false, defaultValue = "2015") Integer year) {
+    Beer b = beers.findById(beerId).orElseThrow();
+    b.setStyleRef(null);
     beers.save(b);
     return "redirect:/admin/beer?year=" + year;
   }

@@ -1,37 +1,81 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <title th:text="'Venue Admin — ' + ${venue != null ? venue.name : 'Unknown'}">Venue Admin</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}"/>
-</head>
-<body>
-  <header>
-    <h1 th:text="'Venue Admin — ' + ${venue != null ? venue.name : 'Unknown'}">Venue Admin</h1>
-    <div class="toolbar">
-      <a class="btn" th:if="${venue != null}" th:href="@{'/admin/venue/' + ${venue.id} + '/events'}">View Events</a>
-      <a class="btn ghost" th:if="${venue != null}" th:href="@{'/taplist?venueId=' + ${venue.id}}">View Taplist</a>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout($ {'Venue Operations · ' + (venue != null ? venue.name : 'Venue')}, 'taproom', 'Monitor tap health and historical activity for this venue.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Tap handles</h3>
+          <span class="metric-pill success" th:text="${tapCount} + ' total'">0 total</span>
+        </header>
+        <div class="metric-value" th:text="${tapCount}">0</div>
+        <footer class="muted">Tap handles assigned to this venue.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Pouring now</h3>
+          <span class="metric-pill warning" th:text="${activeTapCount} + ' active'">0 active</span>
+        </header>
+        <div class="metric-value" th:text="${activeTapCount}">0</div>
+        <footer class="muted">Taps currently serving beer.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Low alerts</h3>
+          <span class="metric-pill critical" th:text="${lowTapAlertCount} + ' flagged'">0 flagged</span>
+        </header>
+        <div class="metric-value" th:text="${lowTapAlertCount}">0</div>
+        <footer class="muted">Kegs below 10% capacity.</footer>
+      </article>
     </div>
-    <p>
-      <a class="btn" th:href="@{/admin/brewery}">⟵ Back to Brewery Admin</a>
-    </p>
-  </header>
-  <main>
-  <h2>Taps</h2>
-  <table class="table">
-    <thead><tr><th>#</th><th>Beer</th><th>%</th></tr></thead>
-    <tbody>
-      <tr th:each="t : ${taps}">
-        <td th:text="${t.number}">1</td>
-        <td>
-          <span th:if="${t.keg != null}" th:text="${t.keg.beer.name}">Beer</span>
-          <span th:if="${t.keg == null}"><em>Empty</em></span>
-        </td>
-        <td th:text="${t.keg != null ? t.keg.fillPercent : 0}">0</td>
-      </tr>
-    </tbody>
-  </table>
-  </main>
-  <div th:replace="~{fragments/footer :: footer}"></div>
-  </body>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2 th:text="${venue != null ? venue.name : 'Venue'}">Venue</h2>
+        <p class="muted">Check tap assignments and pivot to event history or public taplist.</p>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" th:if="${venue != null}" th:href="@{'/admin/venue/' + ${venue.id} + '/events'}">View events</a>
+        <a class="btn ghost" th:if="${venue != null}" th:href="@{'/taplist?venueId=' + ${venue.id}}">Taplist</a>
+        <a class="btn ghost" th:href="@{/admin/brewery}">Back to brewery</a>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Tap</th>
+          <th>Beer</th>
+          <th>Fill</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="t : ${taps}" th:classappend="${t.keg != null && t.keg.fillPercent != null && t.keg.fillPercent <= 10} ? 'is-low' : ''">
+          <td th:text="${t.number}">1</td>
+          <td>
+            <span th:if="${t.keg != null}">
+              <strong th:text="${t.keg.beer.name}">Beer</strong>
+              <span class="muted" th:text="${t.keg.beer.style != null ? ' · ' + t.keg.beer.style : ''}"></span>
+            </span>
+            <span th:if="${t.keg == null}" class="muted">Empty</span>
+          </td>
+          <td>
+            <div th:if="${t.keg != null}" class="fillbar">
+              <div class="fill" th:style="${'width:' + t.keg.fillPercent + '%'}"></div>
+            </div>
+            <span class="muted" th:text="${t.keg != null ? t.keg.fillPercent + '%' : '-'}">%</span>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(taps)}">
+          <td class="muted" colspan="3">No taps configured for this venue.</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
 </html>

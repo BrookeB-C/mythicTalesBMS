@@ -10,4 +10,13 @@ public interface KegMovementHistoryRepository extends JpaRepository<KegMovementH
   Page<KegMovementHistory> findByKeg_Id(Long kegId, Pageable pageable);
 
   Page<KegMovementHistory> findByToVenue_Id(Long toVenueId, Pageable pageable);
+
+  Page<KegMovementHistory> findByMovedAtBetween(
+      java.time.Instant from, java.time.Instant to, Pageable pageable);
+
+  Page<KegMovementHistory> findByKeg_IdAndMovedAtBetween(
+      Long kegId, java.time.Instant from, java.time.Instant to, Pageable pageable);
+
+  Page<KegMovementHistory> findByToVenue_IdAndMovedAtBetween(
+      Long toVenueId, java.time.Instant from, java.time.Instant to, Pageable pageable);
 }

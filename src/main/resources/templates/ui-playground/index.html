@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mythic Tales UI Playground</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/css/ui-playground.css}" />
+</head>
+<body class="ui-playground">
+<div class="playground-shell">
+  <aside class="playground-nav">
+    <div class="nav-header">
+      <div class="product-mark">Mythic Tales BMS</div>
+      <p class="nav-subtitle">Storybook-style catalog of enterprise UI components.</p>
+    </div>
+    <nav class="story-list" aria-label="Component stories">
+      <a th:each="story : ${stories}"
+         th:href="@{/ui/playground(story=${story.id})}"
+         th:text="${story.label}"
+         th:classappend="${story.id == selectedStory} ? 'active' : ''"></a>
+    </nav>
+    <p class="nav-description" th:text="${selectedStoryMeta.description}"></p>
+  </aside>
+
+  <main class="playground-stage">
+    <header class="stage-header">
+      <h1 th:text="${selectedStoryMeta.label}">Foundations</h1>
+      <p class="stage-context">Profiles enterprise-ready colors, spacing, and components. Each section references shared design tokens before full implementation across admin screens.</p>
+    </header>
+
+    <section class="stage-body" th:switch="${selectedStory}">
+      <div th:case="'foundations'" th:replace="~{ui-playground/stories/foundations :: story}"></div>
+      <div th:case="'buttons'" th:replace="~{ui-playground/stories/buttons :: story}"></div>
+      <div th:case="'cards'" th:replace="~{ui-playground/stories/cards :: story}"></div>
+      <div th:case="'tables'" th:replace="~{ui-playground/stories/tables :: story}"></div>
+      <div th:case="'forms'" th:replace="~{ui-playground/stories/forms :: story}"></div>
+      <div th:case="'overlays'" th:replace="~{ui-playground/stories/overlays :: story}"></div>
+      <div th:case="'visualizations'" th:replace="~{ui-playground/stories/visualizations :: story}"></div>
+    </section>
+  </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(pageTitle, activeSection, pageSubtitle, content)">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title th:text="${pageTitle != null ? pageTitle + ' · Mythic Tales BMS' : 'Mythic Tales BMS'}">Mythic Tales BMS</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+<body class="app-shell">
+  <div class="app-frame">
+    <aside class="app-nav" aria-label="Primary navigation">
+      <div class="nav-brand">
+        <div class="brand-mark">Mythic Tales</div>
+        <div class="brand-app">Brewing Management</div>
+      </div>
+      <div class="nav-section">
+        <p class="nav-label">Overview</p>
+        <a th:href="@{/admin/site}" th:classappend="${activeSection} == 'site' ? ' active' : ''">Control Center</a>
+        <th:block th:if="${currentUser != null}" th:switch="${currentUser.role}">
+          <a th:case="${T(com.mythictales.bms.taplist.domain.Role).SITE_ADMIN}" th:href="@{/admin/users}"
+             th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+          <a th:case="${T(com.mythictales.bms.taplist.domain.Role).BREWERY_ADMIN}" th:href="@{/admin/brewery(tab='users')}"
+             th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+          <a th:case="${T(com.mythictales.bms.taplist.domain.Role).TAPROOM_ADMIN}" th:href="@{/admin/taproom(tab='users')}"
+             th:classappend="${activeSection} == 'users' ? ' active' : ''">User Access</a>
+        </th:block>
+      </div>
+      <div class="nav-section">
+        <p class="nav-label">Operations</p>
+        <a th:href="@{/admin/brewery}" th:classappend="${activeSection} == 'brewery' ? ' active' : ''">Breweries</a>
+        <a th:href="@{/admin/taproom}" th:classappend="${activeSection} == 'taproom' ? ' active' : ''">Taprooms</a>
+        <a th:href="@{/admin/bar}" th:classappend="${activeSection} == 'bar' ? ' active' : ''">Bars</a>
+      </div>
+      <div class="nav-section" th:if="${currentUser == null || currentUser.role != T(com.mythictales.bms.taplist.domain.Role).SITE_ADMIN}">
+        <p class="nav-label">Catalog</p>
+        <a th:href="@{/admin/beer}" th:classappend="${activeSection} == 'beer' ? ' active' : ''">Beer Library</a>
+        <a th:href="@{/admin/catalog/recipes}" th:classappend="${activeSection} == 'recipes' ? ' active' : ''">Recipes</a>
+      </div>
+      <div class="nav-footer" th:if="${currentUser != null}">
+        <p class="nav-user-label">Signed in</p>
+        <div class="nav-user">
+          <span class="nav-user-name" th:text="${currentUser.username}">user</span>
+          <span class="nav-user-role" th:text="${#strings.replace(currentUser.authorities[0].authority,'ROLE_','')}">ROLE</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-titles">
+          <h1 th:text="${pageTitle != null ? pageTitle : 'Mythic Tales BMS'}">Mythic Tales BMS</h1>
+          <p class="topbar-subtitle" th:if="${pageSubtitle != null}" th:text="${pageSubtitle}">Subtitle</p>
+        </div>
+        <div class="topbar-actions">
+          <a class="btn ghost" th:href="@{/logout}" th:if="${#authentication?.authenticated}">Logout</a>
+        </div>
+      </header>
+      <main class="app-content" th:insert="${content}"></main>
+      <div class="app-footer-placeholder" th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,45 +1,125 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Users</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}"/>
-  <style>
-    .muted { color:#6b7280; }
-    .nowrap { white-space: nowrap; }
-    table.table { width: 100%; border-collapse: collapse; }
-    table.table th, table.table td { padding: .5rem .6rem; border-bottom: 1px solid #e5e7eb; }
-    table.table th { text-align: left; background: #f3f4f6; }
-  </style>
-  </head>
-<body>
-<header>
-  <h1>Users</h1>
-  <p class="muted">Admin-only view of all accounts and their associations.</p>
-  <p><a class="btn" th:href="@{/admin/site}">⟵ Back to Site Admin</a></p>
-  </header>
-<main>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Role</th>
-        <th>Brewery</th>
-        <th>Taproom</th>
-        <th>Bar</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr th:each="u : ${users}">
-        <td class="nowrap" th:text="${u.username}">username</td>
-        <td class="nowrap" th:text="${u.role}">ROLE</td>
-        <td th:text="${u.brewery != null ? u.brewery.name : '-'}">-</td>
-        <td th:text="${u.taproom != null ? u.taproom.name : '-'}">-</td>
-        <td th:text="${u.bar != null ? u.bar.name : '-'}">-</td>
-      </tr>
-    </tbody>
-  </table>
-</main>
-<div th:replace="~{fragments/footer :: footer}"></div>
-</body>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout('User Access Control Center', 'users', 'Admin view of accounts, roles, and brewery affiliations.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="control-links">
+      <a class="control-link active" th:href="@{/admin/users}">Directory</a>
+      <a class="control-link" th:href="@{/admin/site}">Site Control Center</a>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Total accounts</h3>
+          <span class="metric-pill success" th:text="${#lists.size(users)} + ' active'">0 active</span>
+        </header>
+        <div class="metric-value" th:text="${#lists.size(users)}">0</div>
+        <footer class="muted">Accounts with access to Mythic Tales BMS.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Site admins</h3>
+          <span class="metric-pill warning">Scoped</span>
+        </header>
+        <div class="metric-value"
+             th:text="${users != null ? users.?[role == 'ROLE_SITE_ADMIN'].size() : 0}">0</div>
+        <footer class="muted">Users with global platform privileges.</footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Account directory</h2>
+        <p class="muted">Sorted alphabetically by username with linked affiliations.</p>
+      </div>
+    </div>
+    <div class="alert" th:if="${errorMessage != null}" th:text="${errorMessage}"></div>
+    <div class="alert success-alert" th:if="${successMessage != null}" th:text="${successMessage}"></div>
+
+    <form class="form-grid" method="post" th:action="@{/admin/users}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <div class="form-group">
+        <label for="site-username">Username</label>
+        <input id="site-username" name="username" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="site-password">Password</label>
+        <input id="site-password" name="password" type="password" required />
+      </div>
+      <div class="form-group">
+        <label for="site-role">Role</label>
+        <select id="site-role" name="role">
+          <option th:each="r : ${roles}" th:value="${r}" th:text="${#strings.replace(r.name(),'_',' ')}"></option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="site-brewery">Brewery (for brewery, taproom, or bar users)</label>
+        <select id="site-brewery" name="breweryId">
+          <option value="">-- None --</option>
+          <option th:each="b : ${breweries}" th:value="${b.id}" th:text="${b.name}"></option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="site-taproom">Taproom</label>
+        <select id="site-taproom" name="taproomId">
+          <option value="">-- None --</option>
+          <option th:each="t : ${taprooms}" th:value="${t.id}"
+                  th:text="${t.name + (t.brewery != null ? ' · ' + t.brewery.name : '')}"></option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="site-bar">Bar</label>
+        <select id="site-bar" name="barId">
+          <option value="">-- None --</option>
+          <option th:each="b : ${bars}" th:value="${b.id}"
+                  th:text="${b.name + (b.brewery != null ? ' · ' + b.brewery.name : '')}"></option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Create user</button>
+      </div>
+    </form>
+
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Brewery</th>
+            <th>Taproom</th>
+            <th>Bar</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="u : ${users}">
+            <td class="nowrap" th:text="${u.username}">username</td>
+            <td>
+              <span th:text="${#strings.replace(u.role,'ROLE_','')}"
+                    th:class="${u.role} == 'ROLE_SITE_ADMIN' ? 'badge orange' : 'badge blue'}">ROLE</span>
+            </td>
+            <td th:text="${u.brewery != null ? u.brewery.name : '-'}">-</td>
+            <td th:text="${u.taproom != null ? u.taproom.name : '-'}">-</td>
+            <td th:text="${u.bar != null ? u.bar.name : '-'}">-</td>
+            <td class="actions">
+              <form method="post" th:action="@{'/admin/users/' + ${u.id} + '/delete'}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button class="btn ghost" type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(users)}">
+            <td class="muted" colspan="6">No users found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
 </html>

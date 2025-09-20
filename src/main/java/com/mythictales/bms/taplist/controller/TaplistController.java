@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.mythictales.bms.taplist.domain.Tap;
 import com.mythictales.bms.taplist.repo.TapRepository;
+import com.mythictales.bms.taplist.repo.TaplistViewRepository;
 import com.mythictales.bms.taplist.security.CurrentUser;
 import com.mythictales.bms.taplist.service.TapService;
 
@@ -19,10 +20,13 @@ import com.mythictales.bms.taplist.service.TapService;
 public class TaplistController {
   private final TapRepository taps;
   private final TapService tapService;
+  private final TaplistViewRepository taplistViews;
 
-  public TaplistController(TapRepository taps, TapService tapService) {
+  public TaplistController(
+      TapRepository taps, TapService tapService, TaplistViewRepository taplistViews) {
     this.taps = taps;
     this.tapService = tapService;
+    this.taplistViews = taplistViews;
   }
 
   @GetMapping("/taplist")
@@ -37,6 +41,28 @@ public class TaplistController {
     }
     model.addAttribute("taps", tapList);
     return "taplist/list";
+  }
+
+  @GetMapping("/taplist/board")
+  public String taplistBoard(
+      @RequestParam(value = "venueId", required = false) Long venueId,
+      @RequestParam(value = "taproomId", required = false) Long taproomId,
+      @RequestParam(value = "barId", required = false) Long barId,
+      @RequestParam(value = "refreshSeconds", required = false, defaultValue = "15")
+          int refreshSeconds,
+      Model model) {
+    if (venueId != null) {
+      model.addAttribute("projections", taplistViews.findByVenueIdOrderByTapIdAsc(venueId));
+    } else {
+      // fallback to live taps when venueId not provided
+      List<Tap> tapList =
+          taproomId != null
+              ? taps.findByTaproomId(taproomId)
+              : (barId != null ? taps.findByBarId(barId) : taps.findAll());
+      model.addAttribute("taps", tapList);
+    }
+    model.addAttribute("refreshSeconds", Math.max(5, Math.min(120, refreshSeconds)));
+    return "taplist/board";
   }
 
   @PostMapping("/taps/{id}/tapKeg")

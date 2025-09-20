@@ -18,9 +18,13 @@ import com.mythictales.bms.taplist.keginventory.api.dto.AssignRequest;
 import com.mythictales.bms.taplist.keginventory.api.dto.KegMovementDto;
 import com.mythictales.bms.taplist.keginventory.api.dto.MoveRequest;
 import com.mythictales.bms.taplist.keginventory.api.dto.ReceiveRequest;
+import com.mythictales.bms.taplist.keginventory.api.dto.ReconciliationDto;
 import com.mythictales.bms.taplist.keginventory.api.dto.ReturnRequest;
+import com.mythictales.bms.taplist.keginventory.api.dto.StatusCountsDto;
 import com.mythictales.bms.taplist.keginventory.repo.KegMovementHistoryRepository;
 import com.mythictales.bms.taplist.keginventory.service.KegInventoryService;
+import com.mythictales.bms.taplist.repo.KegPlacementRepository;
+import com.mythictales.bms.taplist.repo.KegRepository;
 import com.mythictales.bms.taplist.security.CurrentUser;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,10 +43,18 @@ public class KegInventoryController {
 
   private final KegInventoryService service;
   private final KegMovementHistoryRepository history;
+  private final KegRepository kegs;
+  private final KegPlacementRepository placements;
 
-  public KegInventoryController(KegInventoryService service, KegMovementHistoryRepository history) {
+  public KegInventoryController(
+      KegInventoryService service,
+      KegMovementHistoryRepository history,
+      KegRepository kegs,
+      KegPlacementRepository placements) {
     this.service = service;
     this.history = history;
+    this.kegs = kegs;
+    this.placements = placements;
   }
 
   @PostMapping("/assign")
@@ -171,6 +183,8 @@ public class KegInventoryController {
   public org.springframework.data.domain.Page<KegMovementDto> history(
       @RequestParam(value = "kegId", required = false) Long kegId,
       @RequestParam(value = "toVenueId", required = false) Long toVenueId,
+      @RequestParam(value = "from", required = false) java.time.Instant from,
+      @RequestParam(value = "to", required = false) java.time.Instant to,
       @RequestParam(value = "page", defaultValue = "0") int page,
       @RequestParam(value = "size", defaultValue = "20") int size,
       @RequestParam(value = "sort", defaultValue = "movedAt,desc") String sort) {
@@ -180,8 +194,14 @@ public class KegInventoryController {
     org.springframework.data.domain.Page<
             com.mythictales.bms.taplist.keginventory.domain.KegMovementHistory>
         data;
-    if (kegId != null) data = history.findByKeg_Id(kegId, pageable);
+    boolean hasRange = from != null && to != null;
+    if (kegId != null && hasRange)
+      data = history.findByKeg_IdAndMovedAtBetween(kegId, from, to, pageable);
+    else if (kegId != null) data = history.findByKeg_Id(kegId, pageable);
+    else if (toVenueId != null && hasRange)
+      data = history.findByToVenue_IdAndMovedAtBetween(toVenueId, from, to, pageable);
     else if (toVenueId != null) data = history.findByToVenue_Id(toVenueId, pageable);
+    else if (hasRange) data = history.findByMovedAtBetween(from, to, pageable);
     else data = history.findAll(pageable);
     return data.map(
         h ->
@@ -206,5 +226,46 @@ public class KegInventoryController {
     } catch (Exception e) {
       return org.springframework.data.domain.Sort.by("movedAt").descending();
     }
+  }
+
+  @GetMapping("/reconciliation")
+  @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN')")
+  @Operation(summary = "Reconciliation report: basic anomalies")
+  public java.util.List<ReconciliationDto> reconcile(
+      @RequestParam(value = "breweryId", required = false) Long breweryId) {
+    var list = new java.util.ArrayList<ReconciliationDto>();
+    java.util.List<com.mythictales.bms.taplist.domain.Keg> all =
+        breweryId != null ? kegs.findByBreweryId(breweryId) : kegs.findAll();
+    for (var k : all) {
+      if (k.getStatus() == com.mythictales.bms.taplist.domain.KegStatus.RECEIVED
+          && k.getAssignedVenue() == null) {
+        list.add(new ReconciliationDto("ReceivedNoVenue", k.getId(), "No assigned venue"));
+      }
+      if (k.getStatus() == com.mythictales.bms.taplist.domain.KegStatus.EMPTY
+          && k.getAssignedVenue() != null) {
+        list.add(
+            new ReconciliationDto(
+                "EmptyButAssigned", k.getId(), "VenueId=" + k.getAssignedVenue().getId()));
+      }
+    }
+    return list;
+  }
+
+  @GetMapping("/reports/statusCounts")
+  @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN','TAPROOM_ADMIN','BAR_ADMIN')")
+  @Operation(summary = "Counts by status; optional brewery/venue filters")
+  public StatusCountsDto statusCounts(
+      @RequestParam(value = "breweryId", required = false) Long breweryId,
+      @RequestParam(value = "venueId", required = false) Long venueId) {
+    java.util.List<com.mythictales.bms.taplist.domain.Keg> list;
+    if (venueId != null) list = kegs.findByAssignedVenueId(venueId);
+    else if (breweryId != null) list = kegs.findByBreweryId(breweryId);
+    else list = kegs.findAll();
+    java.util.Map<String, Long> counts = new java.util.HashMap<>();
+    for (var k : list) {
+      String s = k.getStatus() != null ? k.getStatus().name() : "UNKNOWN";
+      counts.merge(s, 1L, Long::sum);
+    }
+    return new StatusCountsDto(breweryId, venueId, counts);
   }
 }

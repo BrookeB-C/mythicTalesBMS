@@ -1,36 +1,79 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8"/>
-    <title>Bar Admin</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}"/>
-  </head>
-  <body>
-    <header>
-      <h1>Bar Admin</h1>
-    </header>
-    <main>
-      <h2>Your Taps</h2>
-      <table>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout('Bar Operations', 'bar', 'Live view of tap health and keg status for this bar location.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Assigned taps</h3>
+          <span class="metric-pill success" th:text="${tapCount} + ' total'">0 total</span>
+        </header>
+        <div class="metric-value" th:text="${tapCount}">0</div>
+        <footer class="muted">Tap handles linked to this bar.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>On tap now</h3>
+          <span class="metric-pill warning" th:text="${activeTapCount} + ' pouring'">0 pouring</span>
+        </header>
+        <div class="metric-value" th:text="${activeTapCount}">0</div>
+        <footer class="muted">Taps with a keg currently online.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Low alerts</h3>
+          <span class="metric-pill critical" th:text="${lowTapAlertCount} + ' watching'">0 watching</span>
+        </header>
+        <div class="metric-value" th:text="${lowTapAlertCount}">0</div>
+        <footer class="muted">Kegs at or below 10% capacity.</footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Tapline status</h2>
+        <p class="muted">Monitor pours and refill low-volume kegs.</p>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" th:href="@{/taplist}">View guest-facing taplist</a>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>Tap</th>
             <th>Beer</th>
-            <th>%</th>
+            <th>Fill</th>
           </tr>
         </thead>
         <tbody>
-          <tr th:each="t : ${taps}">
+          <tr th:each="t : ${taps}" th:classappend="${t.keg != null && t.keg.fillPercent != null && t.keg.fillPercent <= 10} ? 'is-low' : ''">
             <td th:text="${t.number}">1</td>
             <td>
-              <span th:if="${t.keg != null}" th:text="${t.keg.beer.name}">Beer</span>
-              <span th:if="${t.keg == null}"><em>Empty</em></span>
+              <span th:if="${t.keg != null}">
+                <strong th:text="${t.keg.beer.name}">Beer</strong>
+                <span class="muted" th:text="${t.keg.beer.style != null ? ' · ' + t.keg.beer.style : ''}">Style</span>
+              </span>
+              <span th:if="${t.keg == null}" class="muted">Empty</span>
             </td>
-            <td th:text="${t.keg != null ? t.keg.fillPercent : 0}">0</td>
+            <td>
+              <div th:if="${t.keg != null}" class="fillbar">
+                <div class="fill" th:style="${'width:' + t.keg.fillPercent + '%'}"></div>
+              </div>
+              <span class="muted" th:text="${t.keg != null ? t.keg.fillPercent + '%' : '-'}">%</span>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(taps)}">
+            <td colspan="3" class="muted">No taps registered for this bar.</td>
           </tr>
         </tbody>
       </table>
-    </main>
-    <div th:replace="~{fragments/footer :: footer}"></div>
-  </body>
+    </div>
+  </section>
+</section>
 </html>

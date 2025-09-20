@@ -50,4 +50,29 @@ public interface KegEventRepository extends JpaRepository<KegEvent, Long> {
         ORDER BY e.atTime DESC
     """)
   List<KegEvent> findByVenueIdOrderByAtTimeDesc(@Param("venueId") Long venueId);
+
+  @Query(
+      value =
+          """
+        SELECT e FROM KegEvent e
+        JOIN e.placement p
+        JOIN p.tap t
+        LEFT JOIN t.taproom tr
+        LEFT JOIN tr.brewery br
+        WHERE (:breweryId IS NULL OR br.id = :breweryId)
+          AND (:taproomId IS NULL OR tr.id = :taproomId)
+        ORDER BY e.atTime DESC
+    """,
+      countQuery =
+          """
+        SELECT COUNT(e) FROM KegEvent e
+        JOIN e.placement p
+        JOIN p.tap t
+        LEFT JOIN t.taproom tr
+        LEFT JOIN tr.brewery br
+        WHERE (:breweryId IS NULL OR br.id = :breweryId)
+          AND (:taproomId IS NULL OR tr.id = :taproomId)
+    """)
+  Page<KegEvent> findEventsFiltered(
+      @Param("breweryId") Long breweryId, @Param("taproomId") Long taproomId, Pageable pageable);
 }

@@ -7,7 +7,7 @@ IMAGE    := mythictales/$(APP_NAME):latest
 PORT     := 8080
 JAVA_OPTS ?=
 
-.PHONY: help run build test package clean format check-format docker-build docker-run docker-stop docker-rm spotbugs spotbugs-strict setup-commit-template db-up-staging db-stop-staging db-up-prod db-stop-prod
+.PHONY: help run build test package clean format check-format docker-build docker-run docker-stop docker-rm spotbugs spotbugs-strict setup-commit-template db-up-staging db-stop-staging db-up-prod db-stop-prod kafka-up kafka-down kafka-logs staging_up prod_up staging_stop prod_stop
 
 help:
 	@echo "Targets:"
@@ -28,6 +28,13 @@ help:
 	@echo "  db-stop-staging - Stop Postgres (staging)"
 	@echo "  db-up-prod    - Start Postgres (prod) via compose"
 	@echo "  db-stop-prod  - Stop Postgres (prod)"
+	@echo "  kafka-up      - Start dev Kafka stack"
+	@echo "  kafka-down    - Stop dev Kafka stack"
+	@echo "  kafka-logs    - Tail Kafka broker logs"
+	@echo "  staging_up    - Start staging Postgres and Kafka"
+	@echo "  staging_stop  - Stop staging Postgres and Kafka"
+	@echo "  prod_up       - Start prod Postgres and Kafka"
+	@echo "  prod_stop     - Stop prod Postgres and Kafka"
 	@echo "  setup-commit-template - Configure git commit.template to .gitmessage.txt"
 
 run:
@@ -85,6 +92,27 @@ db-up-prod:
 db-stop-prod:
 	docker compose stop postgres-prod || true
 	docker compose rm -f postgres-prod || true
+
+kafka-up:
+	docker compose -f docker/compose/kafka-dev.yml up -d
+
+kafka-down:
+	docker compose -f docker/compose/kafka-dev.yml down
+
+kafka-logs:
+	docker compose -f docker/compose/kafka-dev.yml logs -f kafka
+
+staging_up: db-up-staging kafka-up
+	@echo "Staging Postgres and Kafka stack started"
+
+prod_up: db-up-prod kafka-up
+	@echo "Prod Postgres and Kafka stack started"
+
+staging_stop: kafka-down db-stop-staging
+	@echo "Staging Postgres and Kafka stack stopped"
+
+prod_stop: kafka-down db-stop-prod
+	@echo "Prod Postgres and Kafka stack stopped"
 
 setup-commit-template:
 	git config commit.template .gitmessage.txt

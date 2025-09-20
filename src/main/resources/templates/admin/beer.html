@@ -1,60 +1,117 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Beers — Link BJCP Style</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}"/>
-</head>
-<body>
-<header>
-  <h1>Beers — Link BJCP Style</h1>
-  <p><a class="btn ghost" th:href="@{/admin/brewery}">⟵ Back to Brewery Admin</a></p>
-</header>
-<main>
-  <form method="get" th:action="@{/admin/beer}" class="inline" style="margin-bottom:.5rem">
-    <label>Guideline Year
-      <select name="year">
-        <option th:value="2015" th:selected="${year == 2015}">2015</option>
-        <option th:value="2021" th:selected="${year == 2021}">2021</option>
-      </select>
-    </label>
-    <button class="btn" type="submit">Apply</button>
-  </form>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/app :: layout('Beer Library', 'beer', 'Link brewery beers to BJCP guidelines and keep style metadata current.', ~{::section[@id='page-content']})}">
+<section id="page-content">
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="metric-card">
+        <header>
+          <h3>Beers in scope</h3>
+          <span class="metric-pill success" th:text="${beerCount} + ' total'">0 total</span>
+        </header>
+        <div class="metric-value" th:text="${beerCount}">0</div>
+        <footer class="muted">Distinct beers associated with your brewery.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Style linked</h3>
+          <span class="metric-pill warning" th:text="${linkedBeerCount} + ' mapped'">0 mapped</span>
+        </header>
+        <div class="metric-value" th:text="${linkedBeerCount}">0</div>
+        <footer class="muted">Uses BJCP reference for style normalization.</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <h3>Style options</h3>
+          <span class="metric-pill info" th:text="${styleOptionCount} + ' entries'">0 entries</span>
+        </header>
+        <div class="metric-value" th:text="${styleCategoryCount}">0</div>
+        <footer class="muted">BJCP categories available for mapping.</footer>
+      </article>
+    </div>
+  </section>
 
-  <table class="table">
-    <thead>
-    <tr>
-      <th>Name</th>
-      <th>Current Style (text)</th>
-      <th>BJCP Style</th>
-      <th>Action</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="b : ${beers}">
-      <td th:text="${b.name}">Beer</td>
-      <td th:text="${b.style}">Style</td>
-      <td>
-        <form method="post" th:action="@{'/admin/beer/' + ${b.id} + '/style'}" class="inline">
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-          <input type="hidden" name="year" th:value="${year}"/>
-          <select name="styleId" required>
-            <option value="" disabled selected>Select BJCP style…</option>
-            <optgroup th:each="entry : ${stylesByCategory}" th:label="${entry.key}">
-              <option th:each="s : ${entry.value}" th:value="${s.id}" th:text="${s.code + ' — ' + s.name}">
-              </option>
-            </optgroup>
-          </select>
-          <button class="btn" type="submit">Link</button>
-        </form>
-      </td>
-      <td>
-        <span th:if="${b.styleRef != null}" th:text="${b.styleRef.code + ' — ' + b.styleRef.name}">18B — APA</span>
-      </td>
-    </tr>
-    </tbody>
-  </table>
-</main>
-<div th:replace="~{fragments/footer :: footer}"></div>
-</body>
+  <section class="page-section">
+    <div class="section-heading">
+      <div>
+        <h2>Manage BJCP linkage</h2>
+        <p class="muted">Filter your library, assign guideline codes, and keep metadata in sync.</p>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" th:href="@{/admin/brewery}">Back to brewery admin</a>
+      </div>
+    </div>
+
+    <form method="get" th:action="@{/admin/beer}" class="form-inline">
+      <div class="form-group">
+        <label for="guidelineYear">Guideline year</label>
+        <select id="guidelineYear" name="year">
+          <option th:value="2015" th:selected="${year == 2015}">2015</option>
+          <option th:value="2021" th:selected="${year == 2021}">2021</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="beerSearch">Search beers</label>
+        <input id="beerSearch" type="text" name="q" placeholder="Beer name…" th:value="${q}" />
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Apply filters</button>
+      </div>
+    </form>
+
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Declared style</th>
+          <th>BJCP link</th>
+          <th>Current mapping</th>
+          <th aria-label="Actions"></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="b : ${beers}">
+          <td th:text="${b.name}">Beer</td>
+          <td th:text="${b.style}">Style</td>
+          <td>
+            <form method="post" th:action="@{'/admin/beer/' + ${b.id} + '/style'}" class="form-inline form-inline--compact">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+              <input type="hidden" name="year" th:value="${year}" />
+              <div class="form-group">
+                <label class="sr-only" th:for="${'style-' + b.id}">BJCP style</label>
+                <select th:id="${'style-' + b.id}" name="styleId" required>
+                  <option value="" disabled selected>Select BJCP style…</option>
+                  <optgroup th:each="entry : ${stylesByCategory}" th:label="${entry.key}">
+                    <option th:each="s : ${entry.value}" th:value="${s.id}" th:text="${s.code + ' — ' + s.name}"></option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="form-actions">
+                <button class="btn secondary" type="submit">Link style</button>
+              </div>
+            </form>
+          </td>
+          <td>
+            <span th:if="${b.styleRef != null}" th:text="${b.styleRef.code + ' — ' + b.styleRef.name}">18B — APA</span>
+            <span th:if="${b.styleRef == null}" class="muted">Not linked</span>
+          </td>
+          <td class="actions">
+            <form th:if="${b.styleRef != null}" method="post" th:action="@{'/admin/beer/' + ${b.id} + '/style/unlink'}" class="form-inline form-inline--compact">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+              <input type="hidden" name="year" th:value="${year}" />
+              <div class="form-actions">
+                <button class="btn critical outline" type="submit">Unlink</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(beers)}">
+          <td class="muted" colspan="5">No beers found for the selected filters.</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
 </html>

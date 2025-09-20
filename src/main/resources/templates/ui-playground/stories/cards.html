@@ -1,0 +1,47 @@
+<div th:fragment="story">
+  <section class="story-section">
+    <h2>Metric Cards</h2>
+    <div class="card-row">
+      <article class="metric-card">
+        <header>
+          <span class="metric-label">Active Fermenters</span>
+          <span class="metric-pill success">Stable</span>
+        </header>
+        <div class="metric-value">12</div>
+        <footer>↑ 2 vs last week</footer>
+      </article>
+      <article class="metric-card">
+        <header>
+          <span class="metric-label">Pending Transfers</span>
+          <span class="metric-pill warning">Action Needed</span>
+        </header>
+        <div class="metric-value">5</div>
+        <footer>Oldest: 3 days</footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="story-section">
+    <h2>Content Cards</h2>
+    <div class="card-row">
+      <article class="content-card">
+        <header>
+          <div>
+            <h3>Batch QA Checklist</h3>
+            <p class="muted">Validate gravity, temperature, and sanitation before transfer.</p>
+          </div>
+          <button class="story-btn btn-secondary">Review</button>
+        </header>
+        <ul class="card-list">
+          <li>Fermentation log needs signature</li>
+          <li>Cooling loop inspection pending</li>
+          <li>Notify distribution of ETA</li>
+        </ul>
+        <footer>
+          <button class="story-btn btn-ghost">Dismiss</button>
+          <button class="story-btn btn-primary">Complete tasks</button>
+        </footer>
+      </article>
+    </div>
+  </section>
+</div>
