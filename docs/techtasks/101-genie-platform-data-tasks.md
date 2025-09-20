@@ -2,6 +2,13 @@
 
 Scope: DB schema/migrations, profiles, observability, CI/CD, infrastructure.
 
+## P0 — Component Library Foundations
+- Scaffold `/ui-library` workspace with Node 18+, Vite, Lit, and Storybook per `docs/features/enterprise-component-library.md`.
+- Wire build outputs (module + legacy bundles, CSS) into Spring static resources (e.g., copy to `src/main/resources/static/ui/`) and document local dev scripts.
+- Configure internal package publishing strategy (npm registry or vendor drop) and add CI job to build/test Storybook + unit tests.
+- Adapt Spring Boot layout to load bundled assets behind a feature flag/profile for pilot pages; confirm prototype parity with `static/prototypes/enterprise-desktop.html`.
+- Update developer docs (`docs/features/enterprise-component-library.md`) with tooling commands, contribution workflow, and rollout checklist.
+
 ## Sprint 1 — Profiles & Migrations
 - Introduce profiles
   - `application-dev.yml`: H2, Swagger UI enabled, relaxed CORS, demo seed enabled
