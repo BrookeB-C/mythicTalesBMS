@@ -54,6 +54,7 @@
       const venuesCache = { list: null, loading: false };
       const queueSize = 6;
       const activitySize = 5;
+      let csrfHeaderName = 'X-XSRF-TOKEN';
 
       (function () {
         if (!consoleEl) {
@@ -63,7 +64,7 @@
         const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
         const breweryIdValue = consoleEl.dataset.breweryId || '';
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
-        const csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
+        csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
         const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
 
         const createUserDialog = document.getElementById('createUserDialog');
