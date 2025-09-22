@@ -577,6 +577,15 @@
           credentials: 'include'
         };
         const csrfToken = resolveCsrfToken();
+        if (consoleEl) {
+          console.debug('IAM csrf debug: preparing request', {
+            url,
+            headerName: csrfHeaderName,
+            datasetToken: consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+            cookieToken: csrfToken,
+            headers: options.headers
+          });
+        }
         if (csrfToken) {
           options.headers[csrfHeaderName] = csrfToken;
           if (csrfHeaderName !== 'X-XSRF-TOKEN') {
@@ -588,6 +597,13 @@
         }
         const response = await fetch(url, options);
         if (!response.ok) {
+          if (consoleEl) {
+            console.warn('IAM csrf debug: non-OK response', {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries())
+            });
+          }
           throw new Error(`Request failed (${response.status})`);
         }
         const result = await response
