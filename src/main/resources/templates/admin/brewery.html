@@ -50,8 +50,12 @@
     </dialog>
     <script th:inline="javascript">
       /*<![CDATA[*/
+      const consoleEl = document.getElementById('brewConsole');
+      const venuesCache = { list: null, loading: false };
+      const queueSize = 6;
+      const activitySize = 5;
+
       (function () {
-        const consoleEl = document.getElementById('brewConsole');
         if (!consoleEl) {
           return;
         }
@@ -83,10 +87,6 @@
             }
           });
         }
-
-        const venuesCache = { list: null, loading: false };
-        const queueSize = 6;
-        const activitySize = 5;
 
         customElements
           .whenDefined('mt-enterprise-console')
