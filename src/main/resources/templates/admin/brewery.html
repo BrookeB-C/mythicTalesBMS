@@ -50,6 +50,8 @@
     </dialog>
     <script th:inline="javascript">
       /*<![CDATA[*/
+      window.lastCsrfDebug = { version: '20250922b', lastUpdated: Date.now(), event: 'init' };
+
       const consoleEl = document.getElementById('brewConsole');
       const venuesCache = { list: null, loading: false };
       const queueSize = 6;
@@ -66,7 +68,6 @@
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
         csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
         const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
-
         const createUserDialog = document.getElementById('createUserDialog');
         const createUserForm = document.getElementById('createUserForm');
         const createUserError = document.getElementById('createUserError');
@@ -577,6 +578,16 @@
           credentials: 'include'
         };
         const csrfToken = resolveCsrfToken();
+        window.lastCsrfDebug = {
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'request',
+          url,
+          headerName: csrfHeaderName,
+          datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+          cookieToken: csrfToken,
+          headers: { ...options.headers }
+        };
         if (consoleEl) {
           console.debug('IAM csrf debug: preparing request', {
             url,
@@ -597,6 +608,25 @@
         }
         const response = await fetch(url, options);
         if (!response.ok) {
+          const headers = Object.fromEntries(response.headers.entries());
+          let responseBody;
+          try {
+            responseBody = await response.clone().json();
+          } catch (_) {
+            responseBody = await response.text();
+          }
+          window.lastCsrfDebug = {
+            version: '20250922b',
+            lastUpdated: Date.now(),
+            event: 'response-error',
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+            datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+            cookieToken: readCsrfToken(),
+            body: responseBody
+          };
+          console.warn('IAM csrf debug: non-OK response', window.lastCsrfDebug);
           if (consoleEl) {
             console.warn('IAM csrf debug: non-OK response', {
               status: response.status,
@@ -614,6 +644,14 @@
         if (latestToken && consoleEl && consoleEl.dataset) {
           consoleEl.dataset.csrfToken = latestToken;
         }
+        window.lastCsrfDebug = {
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'response-ok',
+          status: response.status,
+          datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+          cookieToken: latestToken
+        };
         return result;
       }
 
