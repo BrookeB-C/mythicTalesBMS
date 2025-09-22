@@ -8,7 +8,9 @@
         th:attr="data-overrides=${consoleDataJson},
                   data-selected-domain=${consoleSelectedDomain},
                   data-brewery-id=${brewery != null ? brewery.id : ''},
-                  data-brewery-name=${brewery != null ? brewery.name : 'Brewery'}"></mt-enterprise-console>
+                  data-brewery-name=${brewery != null ? brewery.name : 'Brewery'},
+                  data-csrf-token=${_csrf != null ? _csrf.token : ''},
+                  data-csrf-header=${_csrf != null ? _csrf.headerName : ''}"></mt-enterprise-console>
     <script th:inline="javascript">
       /*<![CDATA[*/
       (function () {
@@ -20,6 +22,7 @@
         const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
         const breweryIdValue = consoleEl.dataset.breweryId || '';
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
+        const csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
 
         const venuesCache = { list: null, loading: false };
         const queueSize = 6;
@@ -275,6 +278,13 @@
           },
           credentials: 'same-origin'
         };
+        const csrfToken = resolveCsrfToken();
+        if (csrfToken) {
+          options.headers[csrfHeaderName] = csrfToken;
+          if (csrfHeaderName !== 'X-XSRF-TOKEN') {
+            options.headers['X-XSRF-TOKEN'] = csrfToken;
+          }
+        }
         if (body && Object.keys(body).length > 0) {
           options.body = JSON.stringify(body);
         }
@@ -282,10 +292,22 @@
         if (!response.ok) {
           throw new Error(`Request failed (${response.status})`);
         }
-        return response
+        const result = await response
           .text()
           .then((text) => (text ? JSON.parse(text) : {}))
           .catch(() => ({}));
+        const latestToken = readCsrfToken();
+        if (latestToken && consoleEl && consoleEl.dataset) {
+          consoleEl.dataset.csrfToken = latestToken;
+        }
+        return result;
+      }
+
+      function resolveCsrfToken() {
+        if (consoleEl && consoleEl.dataset && consoleEl.dataset.csrfToken) {
+          return consoleEl.dataset.csrfToken;
+        }
+        return readCsrfToken();
       }
       /*]]>*/
     </script>
