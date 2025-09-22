@@ -34,6 +34,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -55,6 +57,8 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyRole('SITE_ADMIN','BREWERY_ADMIN')")
 @Validated
 public class UserApiController {
+
+  private static final Logger log = LoggerFactory.getLogger(UserApiController.class);
 
   private static final Set<Role> BREWERY_MANAGEABLE_ROLES =
       Set.of(Role.BREWERY_ADMIN, Role.TAPROOM_ADMIN, Role.TAPROOM_USER, Role.BAR_ADMIN);
@@ -419,26 +423,56 @@ public class UserApiController {
     addUsers(deduped, users.findByBar_Brewery_Id(breweryId));
 
     List<UserAccount> combined = new ArrayList<>(deduped.values());
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "collectUsersForBrewery: breweryId={}, candidates={}, pageable={}, sort={}",
+          breweryId,
+          combined.size(),
+          pageable,
+          pageable != null ? pageable.getSort() : null);
+    }
     sortUsers(combined, pageable);
 
     int total = combined.size();
     if (pageable.isUnpaged()) {
       List<UserDto> dtos =
           combined.stream().map(ApiMappers::toDto).collect(Collectors.toList());
-      return new PageImpl<>(dtos, Pageable.unpaged(), total);
+      Page<UserDto> page = new PageImpl<>(dtos, Pageable.unpaged(), total);
+      logPlainPageWarningIfNeeded(page, "unpaged");
+      return page;
     }
 
     int pageSize = pageable.getPageSize();
     int offset = (int) pageable.getOffset();
     if (offset >= total) {
-      return new PageImpl<>(List.of(), pageable, total);
+      Page<UserDto> emptyPage = new PageImpl<>(List.of(), pageable, total);
+      logPlainPageWarningIfNeeded(emptyPage, "offset>=total");
+      return emptyPage;
     }
 
     int toIndex = Math.min(offset + pageSize, total);
     List<UserDto> slice =
         combined.subList(offset, toIndex).stream().map(ApiMappers::toDto).collect(Collectors.toList());
 
-    return new PageImpl<>(slice, pageable, total);
+    Page<UserDto> page = new PageImpl<>(slice, pageable, total);
+    logPlainPageWarningIfNeeded(page, "paged");
+    return page;
+  }
+
+  private void logPlainPageWarningIfNeeded(Page<UserDto> page, String context) {
+    if (page instanceof PageImpl<?> pageImpl && log.isWarnEnabled()) {
+      log.warn(
+          "Returning PageImpl directly (context={}): type={}, pageableClass={}, contentType={} (size={}, total={})",
+          context,
+          pageImpl.getClass().getName(),
+          pageImpl.getPageable() != null ? pageImpl.getPageable().getClass().getName() : "null",
+          pageImpl.getContent().isEmpty() ? "empty" : pageImpl.getContent().get(0).getClass().getName(),
+          pageImpl.getContent().size(),
+          pageImpl.getTotalElements());
+      if (log.isDebugEnabled()) {
+        log.debug("PageImpl details: content={}, pageable={}, sort={}", pageImpl.getContent(), pageImpl.getPageable(), pageImpl.getSort());
+      }
+    }
   }
 
   private void addUsers(LinkedHashMap<Long, UserAccount> map, List<UserAccount> candidates) {
