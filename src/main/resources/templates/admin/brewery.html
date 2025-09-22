@@ -50,7 +50,9 @@
     </dialog>
     <script th:inline="javascript">
       /*<![CDATA[*/
-      window.lastCsrfDebug = { version: '20250922b', lastUpdated: Date.now(), event: 'init' };
+      window.lastCsrfDebug = { version: '20250922c', lastUpdated: Date.now(), event: 'init' };
+      window.lastCsrfRequest = null;
+      window.lastCsrfResponse = null;
 
       const consoleEl = document.getElementById('brewConsole');
       const venuesCache = { list: null, loading: false };
@@ -569,39 +571,36 @@
       }
 
       async function postJson(url, body) {
+        const headers = new Headers({
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        });
         const options = {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json'
-          },
+          headers,
           credentials: 'include'
         };
         const csrfToken = resolveCsrfToken();
-        window.lastCsrfDebug = {
-          version: '20250922b',
+        if (csrfToken) {
+          headers.set(csrfHeaderName, csrfToken);
+          if (csrfHeaderName !== 'X-XSRF-TOKEN') {
+            headers.set('X-XSRF-TOKEN', csrfToken);
+          }
+        }
+        const requestDebug = {
+          version: '20250922c',
           lastUpdated: Date.now(),
           event: 'request',
           url,
           headerName: csrfHeaderName,
           datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
           cookieToken: csrfToken,
-          headers: { ...options.headers }
+          headers: Object.fromEntries(headers.entries())
         };
-        if (consoleEl) {
-          console.debug('IAM csrf debug: preparing request', {
-            url,
-            headerName: csrfHeaderName,
-            datasetToken: consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
-            cookieToken: csrfToken,
-            headers: options.headers
-          });
-        }
+        window.lastCsrfDebug = requestDebug;
+        window.lastCsrfRequest = requestDebug;
         if (csrfToken) {
-          options.headers[csrfHeaderName] = csrfToken;
-          if (csrfHeaderName !== 'X-XSRF-TOKEN') {
-            options.headers['X-XSRF-TOKEN'] = csrfToken;
-          }
+          console.debug('IAM csrf debug: request headers', requestDebug.headers);
         }
         if (body && Object.keys(body).length > 0) {
           options.body = JSON.stringify(body);
@@ -615,8 +614,8 @@
           } catch (_) {
             responseBody = await response.text();
           }
-          window.lastCsrfDebug = {
-            version: '20250922b',
+          const responseDebug = {
+            version: '20250922c',
             lastUpdated: Date.now(),
             event: 'response-error',
             status: response.status,
@@ -626,14 +625,9 @@
             cookieToken: readCsrfToken(),
             body: responseBody
           };
-          console.warn('IAM csrf debug: non-OK response', window.lastCsrfDebug);
-          if (consoleEl) {
-            console.warn('IAM csrf debug: non-OK response', {
-              status: response.status,
-              statusText: response.statusText,
-              headers: Object.fromEntries(response.headers.entries())
-            });
-          }
+          window.lastCsrfDebug = responseDebug;
+          window.lastCsrfResponse = responseDebug;
+          console.warn('IAM csrf debug: non-OK response', responseDebug);
           throw new Error(`Request failed (${response.status})`);
         }
         const result = await response
@@ -644,14 +638,16 @@
         if (latestToken && consoleEl && consoleEl.dataset) {
           consoleEl.dataset.csrfToken = latestToken;
         }
-        window.lastCsrfDebug = {
-          version: '20250922b',
+        const okDebug = {
+          version: '20250922c',
           lastUpdated: Date.now(),
           event: 'response-ok',
           status: response.status,
           datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
           cookieToken: latestToken
         };
+        window.lastCsrfDebug = okDebug;
+        window.lastCsrfResponse = okDebug;
         return result;
       }
 
