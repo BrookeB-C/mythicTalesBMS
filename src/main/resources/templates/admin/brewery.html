@@ -392,7 +392,7 @@
             url.searchParams.set('size', '25');
             const response = await fetch(url.toString(), {
               headers: { Accept: 'application/json' },
-              credentials: 'same-origin'
+              credentials: 'include'
             });
             if (!response.ok) {
               throw new Error(`Failed to load users (${response.status})`);
@@ -404,6 +404,7 @@
             if (selectDomain) {
               consoleEl.selectedDomain = 'iam';
             }
+            syncCsrfTokenFromCookie();
           } catch (error) {
             console.warn('Unable to load brewery users', error);
             if (consoleEl) {
@@ -492,7 +493,7 @@
           url.searchParams.set('activitySize', String(activitySize));
           const response = await fetch(url.toString(), {
             headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
+            credentials: 'include'
           });
           if (!response.ok) {
             throw new Error(`Summary fetch failed (${response.status})`);
@@ -502,6 +503,7 @@
           domains.keginventory = summary;
           consoleEl.domains = domains;
           consoleEl.selectedDomain = 'keginventory';
+          syncCsrfTokenFromCookie();
         } catch (error) {
           console.error('Unable to refresh keg inventory summary', error);
         }
@@ -548,13 +550,14 @@
           const url = `/api/v1/venues?breweryId=${breweryId}&size=200`;
           const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
+            credentials: 'include'
           });
           if (!response.ok) {
             throw new Error(`Venue load failed (${response.status})`);
           }
           const payload = await response.json();
           venuesCache.list = Array.isArray(payload.content) ? payload.content : [];
+          syncCsrfTokenFromCookie();
           return venuesCache.list;
         } catch (error) {
           console.error('Unable to load venues', error);
@@ -571,7 +574,7 @@
             'Content-Type': 'application/json',
             Accept: 'application/json'
           },
-          credentials: 'same-origin'
+          credentials: 'include'
         };
         const csrfToken = resolveCsrfToken();
         if (csrfToken) {
@@ -610,6 +613,13 @@
           return consoleEl.dataset.csrfToken;
         }
         return null;
+      }
+
+      function syncCsrfTokenFromCookie() {
+        const latestToken = readCsrfToken();
+        if (latestToken && consoleEl && consoleEl.dataset) {
+          consoleEl.dataset.csrfToken = latestToken;
+        }
       }
 
       function readCsrfToken() {
