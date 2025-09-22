@@ -8,7 +8,9 @@
         th:attr="data-overrides=${consoleDataJson},
                   data-selected-domain=${consoleSelectedDomain},
                   data-brewery-id=${brewery != null ? brewery.id : ''},
-                  data-brewery-name=${brewery != null ? brewery.name : 'Brewery'}"></mt-enterprise-console>
+                  data-brewery-name=${brewery != null ? brewery.name : 'Brewery'},
+                  data-csrf-token=${_csrf != null ? _csrf.token : ''},
+                  data-csrf-header=${_csrf != null ? _csrf.headerName : ''}"></mt-enterprise-console>
     <dialog id="createUserDialog" class="modal">
       <form id="createUserForm" method="dialog" class="stacked-form">
         <h2>Create user</h2>
@@ -57,6 +59,7 @@
         const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
         const breweryIdValue = consoleEl.dataset.breweryId || '';
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
+        const csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
         const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
 
         const createUserDialog = document.getElementById('createUserDialog');
@@ -569,9 +572,12 @@
           },
           credentials: 'same-origin'
         };
-        const csrfToken = readCsrfToken();
+        const csrfToken = resolveCsrfToken();
         if (csrfToken) {
-          options.headers['X-XSRF-TOKEN'] = csrfToken;
+          options.headers[csrfHeaderName] = csrfToken;
+          if (csrfHeaderName !== 'X-XSRF-TOKEN') {
+            options.headers['X-XSRF-TOKEN'] = csrfToken;
+          }
         }
         if (body && Object.keys(body).length > 0) {
           options.body = JSON.stringify(body);
@@ -580,10 +586,29 @@
         if (!response.ok) {
           throw new Error(`Request failed (${response.status})`);
         }
-        return response
+        const result = await response
           .text()
           .then((text) => (text ? JSON.parse(text) : {}))
           .catch(() => ({}));
+        const latestToken = readCsrfToken();
+        if (latestToken && consoleEl && consoleEl.dataset) {
+          consoleEl.dataset.csrfToken = latestToken;
+        }
+        return result;
+      }
+
+      function resolveCsrfToken() {
+        const fromCookie = readCsrfToken();
+        if (fromCookie) {
+          if (consoleEl && consoleEl.dataset) {
+            consoleEl.dataset.csrfToken = fromCookie;
+          }
+          return fromCookie;
+        }
+        if (consoleEl && consoleEl.dataset && consoleEl.dataset.csrfToken) {
+          return consoleEl.dataset.csrfToken;
+        }
+        return null;
       }
 
       function readCsrfToken() {
