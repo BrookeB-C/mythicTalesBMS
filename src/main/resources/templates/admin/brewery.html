@@ -9,6 +9,43 @@
                   data-selected-domain=${consoleSelectedDomain},
                   data-brewery-id=${brewery != null ? brewery.id : ''},
                   data-brewery-name=${brewery != null ? brewery.name : 'Brewery'}"></mt-enterprise-console>
+    <dialog id="createUserDialog" class="modal">
+      <form id="createUserForm" method="dialog" class="stacked-form">
+        <h2>Create user</h2>
+        <p class="muted">Provide credentials and scope for the new account.</p>
+        <div class="form-group">
+          <label for="createUserUsername">Username</label>
+          <input id="createUserUsername" name="username" type="text" required placeholder="team member" />
+        </div>
+        <div class="form-group">
+          <label for="createUserPassword">Password</label>
+          <input id="createUserPassword" name="password" type="password" required placeholder="******" />
+        </div>
+        <div class="form-group">
+          <label for="createUserRole">Role</label>
+          <select id="createUserRole" name="role" required>
+            <option value="BREWERY_ADMIN">Brewery Admin</option>
+            <option value="TAPROOM_ADMIN">Taproom Admin</option>
+            <option value="TAPROOM_USER" selected>Taproom User</option>
+            <option value="BAR_ADMIN">Bar Admin</option>
+            <option value="SITE_ADMIN">Site Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="createUserTaproomId">Taproom ID <span class="muted">(optional)</span></label>
+          <input id="createUserTaproomId" name="taproomId" type="number" min="1" placeholder="Taproom assignment" />
+        </div>
+        <div class="form-group">
+          <label for="createUserBarId">Bar ID <span class="muted">(optional)</span></label>
+          <input id="createUserBarId" name="barId" type="number" min="1" placeholder="Bar assignment" />
+        </div>
+        <p id="createUserError" class="form-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="button" class="btn secondary" data-action="cancel">Cancel</button>
+          <button type="submit" class="btn primary">Create user</button>
+        </div>
+      </form>
+    </dialog>
     <script th:inline="javascript">
       /*<![CDATA[*/
       (function () {
@@ -20,6 +57,29 @@
         const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
         const breweryIdValue = consoleEl.dataset.breweryId || '';
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
+        const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
+
+        const createUserDialog = document.getElementById('createUserDialog');
+        const createUserForm = document.getElementById('createUserForm');
+        const createUserError = document.getElementById('createUserError');
+        const createUserCancelButton =
+          createUserDialog ? createUserDialog.querySelector('[data-action="cancel"]') : null;
+        let createUserSubmitting = false;
+
+        if (createUserForm) {
+          createUserForm.addEventListener('submit', handleCreateUserSubmit);
+          const roleSelect = createUserForm.querySelector('select[name="role"]');
+          if (roleSelect) {
+            roleSelect.value = 'TAPROOM_USER';
+          }
+        }
+        if (createUserCancelButton) {
+          createUserCancelButton.addEventListener('click', () => {
+            if (!createUserSubmitting) {
+              closeCreateUserDialog();
+            }
+          });
+        }
 
         const venuesCache = { list: null, loading: false };
         const queueSize = 6;
@@ -39,34 +99,8 @@
               console.warn('Unable to hydrate brewery console', err);
             }
 
-            const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
             if (breweryId) {
-              const url = `/api/v1/users?breweryId=${breweryId}&size=25`;
-              fetch(url, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-              })
-                .then((response) => {
-                  if (!response.ok) {
-                    throw new Error(`Failed to load users (${response.status})`);
-                  }
-                  return response.json();
-                })
-                .then((payload) => {
-                  if (!payload || !consoleEl) {
-                    return;
-                  }
-                  const domain = buildIdentityDomainFromApi(payload, breweryName);
-                  const current = consoleEl.domains ? { ...consoleEl.domains } : {};
-                  consoleEl.domains = Object.assign(current, { iam: domain });
-                  consoleEl.selectedDomain = 'iam';
-                })
-                .catch((error) => {
-                  console.warn('Unable to load brewery users', error);
-                  if (consoleEl) {
-                    consoleEl.domains = Object.assign({}, consoleEl.domains || {});
-                  }
-                });
+              hydrateIdentityDomain({ selectDomain: true });
             }
           })
           .catch((err) => console.error('Enterprise console not available', err));
@@ -74,46 +108,305 @@
         consoleEl.addEventListener('enterprise-command', async (event) => {
           const detail = event.detail || {};
           const command = detail.command || {};
-          const kegId = command.kegId;
-          if (!kegId) {
-            window.alert('No eligible kegs for that action right now.');
+
+          if (!command.type) {
+            window.alert('Action not yet supported in this prototype.');
             return;
           }
 
           try {
             switch (command.type) {
+              case 'create-user': {
+                handleCreateUserAction();
+                return;
+              }
               case 'assign': {
+                const kegId = command.kegId;
+                if (!kegId) {
+                  window.alert('No eligible kegs for that action right now.');
+                  return;
+                }
                 const venueId = await chooseVenue();
                 if (!venueId) {
                   return;
                 }
-                await postJson('/api/v1/keg-inventory/assign', {
-                  kegId,
-                  venueId
-                });
+                await postJson('/api/v1/keg-inventory/assign', { kegId, venueId });
                 window.alert('Keg assigned successfully.');
+                await refreshKegInventory();
                 break;
               }
               case 'return': {
+                const kegId = command.kegId;
+                if (!kegId) {
+                  window.alert('No eligible kegs for that action right now.');
+                  return;
+                }
                 await postJson('/api/v1/keg-inventory/return', { kegId });
                 window.alert('Keg return recorded.');
+                await refreshKegInventory();
                 break;
               }
               case 'clean': {
+                const kegId = command.kegId;
+                if (!kegId) {
+                  window.alert('No eligible kegs for that action right now.');
+                  return;
+                }
                 await postJson(`/api/v1/kegs/${kegId}/clean`, {});
                 window.alert('Keg marked as clean.');
+                await refreshKegInventory();
                 break;
               }
               default:
                 window.alert('Action not yet supported in this prototype.');
                 return;
             }
-            await refreshKegInventory();
           } catch (error) {
             console.error('Failed to execute command', error);
             window.alert('Unable to complete that action.');
           }
         });
+
+        function handleCreateUserAction() {
+          if (createUserDialog && typeof createUserDialog.showModal === 'function') {
+            openCreateUserDialog();
+            return;
+          }
+          fallbackCreateUserPrompt();
+        }
+
+        function openCreateUserDialog() {
+          if (!createUserDialog) {
+            fallbackCreateUserPrompt();
+            return;
+          }
+          createUserSubmitting = false;
+          if (createUserForm) {
+            createUserForm.reset();
+            setCreateUserSubmitting(false);
+            const roleSelect = createUserForm.querySelector('select[name="role"]');
+            if (roleSelect) {
+              roleSelect.value = 'TAPROOM_USER';
+            }
+            const usernameInput = createUserForm.querySelector('#createUserUsername');
+            if (usernameInput) {
+              usernameInput.focus();
+            }
+          }
+          clearCreateUserError();
+          if (typeof createUserDialog.showModal === 'function') {
+            createUserDialog.showModal();
+          } else {
+            createUserDialog.setAttribute('open', 'true');
+          }
+        }
+
+        function closeCreateUserDialog() {
+          if (!createUserDialog) {
+            return;
+          }
+          clearCreateUserError();
+          if (typeof createUserDialog.close === 'function') {
+            createUserDialog.close();
+          } else {
+            createUserDialog.removeAttribute('open');
+          }
+        }
+
+        function clearCreateUserError() {
+          if (createUserError) {
+            createUserError.textContent = '';
+            createUserError.hidden = true;
+          }
+        }
+
+        function setCreateUserError(message) {
+          if (createUserError) {
+            createUserError.textContent = message || 'Unable to create user.';
+            createUserError.hidden = false;
+            return;
+          }
+          if (message) {
+            window.alert(message);
+          }
+        }
+
+        function setCreateUserSubmitting(isSubmitting) {
+          if (!createUserForm) {
+            return;
+          }
+          const submitButton = createUserForm.querySelector('button[type="submit"]');
+          if (submitButton) {
+            submitButton.disabled = isSubmitting;
+            submitButton.textContent = isSubmitting ? 'Creating...' : 'Create user';
+          }
+          if (createUserCancelButton) {
+            createUserCancelButton.disabled = isSubmitting;
+          }
+        }
+
+        async function handleCreateUserSubmit(event) {
+          event.preventDefault();
+          if (createUserSubmitting || !createUserForm) {
+            return;
+          }
+
+          clearCreateUserError();
+
+          const data = new FormData(createUserForm);
+          const username = String(data.get('username') || '').trim();
+          const password = String(data.get('password') || '');
+          const roleValue = String(data.get('role') || '').trim().toUpperCase();
+          const taproomId = parseOptionalId(data.get('taproomId'));
+          const barId = parseOptionalId(data.get('barId'));
+
+          if (!username) {
+            setCreateUserError('Username is required.');
+            return;
+          }
+          if (!password) {
+            setCreateUserError('Password is required.');
+            return;
+          }
+          if (!roleValue) {
+            setCreateUserError('Role is required.');
+            return;
+          }
+          if (Number.isNaN(taproomId)) {
+            setCreateUserError('Taproom ID must be a positive number.');
+            return;
+          }
+          if (Number.isNaN(barId)) {
+            setCreateUserError('Bar ID must be a positive number.');
+            return;
+          }
+          if (!breweryId && roleValue !== 'SITE_ADMIN') {
+            setCreateUserError('Brewery context is required to create this user.');
+            return;
+          }
+
+          const payload = {
+            username,
+            password,
+            role: roleValue
+          };
+
+          if (breweryId) {
+            payload.breweryId = breweryId;
+          }
+          if (taproomId) {
+            payload.taproomId = taproomId;
+          }
+          if (barId) {
+            payload.barId = barId;
+          }
+
+          createUserSubmitting = true;
+          setCreateUserSubmitting(true);
+
+          try {
+            await postJson('/api/v1/users', payload);
+            window.alert(`User ${username} created successfully.`);
+            closeCreateUserDialog();
+            createUserForm.reset();
+            await hydrateIdentityDomain({ selectDomain: true });
+          } catch (error) {
+            console.error('Failed to create user', error);
+            const message = error?.message || 'Unable to create user.';
+            setCreateUserError(message);
+          } finally {
+            createUserSubmitting = false;
+            setCreateUserSubmitting(false);
+          }
+        }
+
+        function parseOptionalId(rawValue) {
+          if (rawValue == null) {
+            return null;
+          }
+          const value = String(rawValue).trim();
+          if (!value) {
+            return null;
+          }
+          const parsed = Number(value);
+          if (!Number.isFinite(parsed) || parsed <= 0) {
+            return Number.NaN;
+          }
+          return parsed;
+        }
+
+        async function fallbackCreateUserPrompt() {
+          const username = window.prompt('Enter a username for the new user');
+          if (!username) {
+            return;
+          }
+          const password = window.prompt(`Enter a temporary password for ${username}`);
+          if (!password) {
+            return;
+          }
+          const role = window
+            .prompt(
+              'Enter a role (SITE_ADMIN, BREWERY_ADMIN, TAPROOM_ADMIN, TAPROOM_USER, BAR_ADMIN)',
+              'TAPROOM_USER'
+            )
+            ?.toUpperCase()
+            .trim();
+          if (!role) {
+            return;
+          }
+          if (!breweryId && role !== 'SITE_ADMIN') {
+            window.alert('Brewery context is required to create this user.');
+            return;
+          }
+
+          const payload = {
+            username: username.trim(),
+            password,
+            role
+          };
+          if (breweryId) {
+            payload.breweryId = breweryId;
+          }
+
+          try {
+            await postJson('/api/v1/users', payload);
+            window.alert(`User ${payload.username} created successfully.`);
+            await hydrateIdentityDomain({ selectDomain: true });
+          } catch (error) {
+            console.error('Unable to create user', error);
+            window.alert('Unable to create user.');
+          }
+        }
+
+        async function hydrateIdentityDomain({ selectDomain = false } = {}) {
+          if (!breweryId || !consoleEl) {
+            return;
+          }
+          try {
+            const url = new URL('/api/v1/users', window.location.origin);
+            url.searchParams.set('breweryId', String(breweryId));
+            url.searchParams.set('size', '25');
+            const response = await fetch(url.toString(), {
+              headers: { Accept: 'application/json' },
+              credentials: 'same-origin'
+            });
+            if (!response.ok) {
+              throw new Error(`Failed to load users (${response.status})`);
+            }
+            const payload = await response.json();
+            const domain = buildIdentityDomainFromApi(payload, breweryName);
+            const current = consoleEl.domains ? { ...consoleEl.domains } : {};
+            consoleEl.domains = Object.assign(current, { iam: domain });
+            if (selectDomain) {
+              consoleEl.selectedDomain = 'iam';
+            }
+          } catch (error) {
+            console.warn('Unable to load brewery users', error);
+            if (consoleEl) {
+              consoleEl.domains = Object.assign({}, consoleEl.domains || {});
+            }
+          }
+        }
 
         function buildIdentityDomainFromApi(payload, breweryName) {
           const content = Array.isArray(payload?.content) ? payload.content : [];
@@ -173,6 +466,7 @@
             queue,
             activity,
             quickActions: [
+              { label: 'Create User', command: { type: 'create-user' } },
               { label: 'Manage Team', href: '/admin/brewery?tab=users' },
               { label: 'Invite User', href: '/admin/brewery?tab=users' },
               { label: 'Assign Taproom', href: '/admin/brewery?tab=users' }
@@ -275,6 +569,10 @@
           },
           credentials: 'same-origin'
         };
+        const csrfToken = readCsrfToken();
+        if (csrfToken) {
+          options.headers['X-XSRF-TOKEN'] = csrfToken;
+        }
         if (body && Object.keys(body).length > 0) {
           options.body = JSON.stringify(body);
         }
@@ -286,6 +584,20 @@
           .text()
           .then((text) => (text ? JSON.parse(text) : {}))
           .catch(() => ({}));
+      }
+
+      function readCsrfToken() {
+        if (!document.cookie) {
+          return null;
+        }
+        const parts = document.cookie.split(';');
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (trimmed.startsWith('XSRF-TOKEN=')) {
+            return decodeURIComponent(trimmed.substring('XSRF-TOKEN='.length));
+          }
+        }
+        return null;
       }
       /*]]>*/
     </script>

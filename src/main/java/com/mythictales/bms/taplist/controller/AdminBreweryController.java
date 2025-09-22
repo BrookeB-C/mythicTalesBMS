@@ -663,6 +663,8 @@ public class AdminBreweryController {
     domain.put("activity", activity);
 
     List<Map<String, Object>> quickActions = new ArrayList<>();
+    quickActions.add(
+        Map.of("label", "Create User", "command", Map.of("type", "create-user")));
     quickActions.add(Map.of("label", "Manage Team", "href", "/admin/brewery?tab=users"));
     quickActions.add(Map.of("label", "Invite User", "href", "/admin/brewery?tab=users"));
     quickActions.add(Map.of("label", "Assign Taproom", "href", "/admin/brewery?tab=users"));
