@@ -50,8 +50,15 @@
     </dialog>
     <script th:inline="javascript">
       /*<![CDATA[*/
+      window.lastCsrfDebug = { version: '20250922b', lastUpdated: Date.now(), event: 'init' };
+
+      const consoleEl = document.getElementById('brewConsole');
+      const venuesCache = { list: null, loading: false };
+      const queueSize = 6;
+      const activitySize = 5;
+      let csrfHeaderName = 'X-XSRF-TOKEN';
+
       (function () {
-        const consoleEl = document.getElementById('brewConsole');
         if (!consoleEl) {
           return;
         }
@@ -59,34 +66,14 @@
         const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
         const breweryIdValue = consoleEl.dataset.breweryId || '';
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
-        const csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
+        csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
         const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
-
         const createUserDialog = document.getElementById('createUserDialog');
         const createUserForm = document.getElementById('createUserForm');
         const createUserError = document.getElementById('createUserError');
         const createUserCancelButton =
           createUserDialog ? createUserDialog.querySelector('[data-action="cancel"]') : null;
         let createUserSubmitting = false;
-
-        if (createUserForm) {
-          createUserForm.addEventListener('submit', handleCreateUserSubmit);
-          const roleSelect = createUserForm.querySelector('select[name="role"]');
-          if (roleSelect) {
-            roleSelect.value = 'TAPROOM_USER';
-          }
-        }
-        if (createUserCancelButton) {
-          createUserCancelButton.addEventListener('click', () => {
-            if (!createUserSubmitting) {
-              closeCreateUserDialog();
-            }
-          });
-        }
-
-        const venuesCache = { list: null, loading: false };
-        const queueSize = 6;
-        const activitySize = 5;
 
         customElements
           .whenDefined('mt-enterprise-console')
@@ -573,6 +560,16 @@
           credentials: 'same-origin'
         };
         const csrfToken = resolveCsrfToken();
+        window.lastCsrfDebug = {
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'request',
+          url,
+          headerName: csrfHeaderName,
+          datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+          cookieToken: csrfToken,
+          headers: { ...options.headers }
+        };
         if (csrfToken) {
           options.headers[csrfHeaderName] = csrfToken;
           if (csrfHeaderName !== 'X-XSRF-TOKEN') {
@@ -584,6 +581,25 @@
         }
         const response = await fetch(url, options);
         if (!response.ok) {
+          const headers = Object.fromEntries(response.headers.entries());
+          let responseBody;
+          try {
+            responseBody = await response.clone().json();
+          } catch (_) {
+            responseBody = await response.text();
+          }
+          window.lastCsrfDebug = {
+            version: '20250922b',
+            lastUpdated: Date.now(),
+            event: 'response-error',
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+            datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+            cookieToken: readCsrfToken(),
+            body: responseBody
+          };
+          console.warn('IAM csrf debug: non-OK response', window.lastCsrfDebug);
           throw new Error(`Request failed (${response.status})`);
         }
         const result = await response
@@ -594,6 +610,14 @@
         if (latestToken && consoleEl && consoleEl.dataset) {
           consoleEl.dataset.csrfToken = latestToken;
         }
+        window.lastCsrfDebug = {
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'response-ok',
+          status: response.status,
+          datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+          cookieToken: latestToken
+        };
         return result;
       }
 
