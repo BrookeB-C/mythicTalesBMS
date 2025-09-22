@@ -51,7 +51,9 @@
     <script th:inline="javascript">
       /*<![CDATA[*/
       (function () {
-        const consoleEl = document.getElementById('brewConsole');
+      window.lastCsrfDebug = { version: '20250922b', lastUpdated: Date.now(), event: 'init' };
+
+      const consoleEl = document.getElementById('brewConsole');
         if (!consoleEl) {
           return;
         }
@@ -581,6 +583,16 @@
             cookieToken: csrfToken,
             headers: options.headers
           });
+          window.lastCsrfDebug = {
+            version: '20250922b',
+            lastUpdated: Date.now(),
+            event: 'request',
+            url,
+            headerName: csrfHeaderName,
+            datasetToken: consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+            cookieToken: csrfToken,
+            headers: { ...options.headers }
+          };
         }
         if (csrfToken) {
           options.headers[csrfHeaderName] = csrfToken;
@@ -653,7 +665,12 @@
           cookieToken: latestCookie,
           body: responseBody
         };
-        window.lastCsrfDebug = debugPayload;
+        window.lastCsrfDebug = {
+          ...debugPayload,
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'response'
+        };
         console.warn('IAM csrf debug: non-OK response', debugPayload);
       }
       /*]]>*/
