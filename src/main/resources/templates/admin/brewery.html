@@ -304,10 +304,17 @@
       }
 
       function resolveCsrfToken() {
+        const fromCookie = readCsrfToken();
+        if (fromCookie) {
+          if (consoleEl && consoleEl.dataset) {
+            consoleEl.dataset.csrfToken = fromCookie;
+          }
+          return fromCookie;
+        }
         if (consoleEl && consoleEl.dataset && consoleEl.dataset.csrfToken) {
           return consoleEl.dataset.csrfToken;
         }
-        return readCsrfToken();
+        return null;
       }
       /*]]>*/
     </script>
