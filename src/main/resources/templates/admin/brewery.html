@@ -50,6 +50,14 @@
     </dialog>
     <script th:inline="javascript">
       /*<![CDATA[*/
+      window.lastCsrfDebug = { version: '20250922b', lastUpdated: Date.now(), event: 'init' };
+
+      const consoleEl = document.getElementById('brewConsole');
+      const venuesCache = { list: null, loading: false };
+      const queueSize = 6;
+      const activitySize = 5;
+      let csrfHeaderName = 'X-XSRF-TOKEN';
+
       (function () {
       window.lastCsrfDebug = { version: '20250922b', lastUpdated: Date.now(), event: 'init' };
 
@@ -61,9 +69,8 @@
         const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
         const breweryIdValue = consoleEl.dataset.breweryId || '';
         const breweryName = consoleEl.dataset.breweryName || 'Brewery';
-        const csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
+        csrfHeaderName = consoleEl.dataset.csrfHeader || 'X-XSRF-TOKEN';
         const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
-
         const createUserDialog = document.getElementById('createUserDialog');
         const createUserForm = document.getElementById('createUserForm');
         const createUserError = document.getElementById('createUserError');
@@ -85,10 +92,6 @@
             }
           });
         }
-
-        const venuesCache = { list: null, loading: false };
-        const queueSize = 6;
-        const activitySize = 5;
 
         customElements
           .whenDefined('mt-enterprise-console')
@@ -393,7 +396,7 @@
             url.searchParams.set('size', '25');
             const response = await fetch(url.toString(), {
               headers: { Accept: 'application/json' },
-              credentials: 'same-origin'
+              credentials: 'include'
             });
             if (!response.ok) {
               throw new Error(`Failed to load users (${response.status})`);
@@ -405,6 +408,7 @@
             if (selectDomain) {
               consoleEl.selectedDomain = 'iam';
             }
+            syncCsrfTokenFromCookie();
           } catch (error) {
             console.warn('Unable to load brewery users', error);
             if (consoleEl) {
@@ -493,7 +497,7 @@
           url.searchParams.set('activitySize', String(activitySize));
           const response = await fetch(url.toString(), {
             headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
+            credentials: 'include'
           });
           if (!response.ok) {
             throw new Error(`Summary fetch failed (${response.status})`);
@@ -503,6 +507,7 @@
           domains.keginventory = summary;
           consoleEl.domains = domains;
           consoleEl.selectedDomain = 'keginventory';
+          syncCsrfTokenFromCookie();
         } catch (error) {
           console.error('Unable to refresh keg inventory summary', error);
         }
@@ -549,13 +554,14 @@
           const url = `/api/v1/venues?breweryId=${breweryId}&size=200`;
           const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
+            credentials: 'include'
           });
           if (!response.ok) {
             throw new Error(`Venue load failed (${response.status})`);
           }
           const payload = await response.json();
           venuesCache.list = Array.isArray(payload.content) ? payload.content : [];
+          syncCsrfTokenFromCookie();
           return venuesCache.list;
         } catch (error) {
           console.error('Unable to load venues', error);
@@ -572,9 +578,19 @@
             'Content-Type': 'application/json',
             Accept: 'application/json'
           },
-          credentials: 'same-origin'
+          credentials: 'include'
         };
         const csrfToken = resolveCsrfToken();
+        window.lastCsrfDebug = {
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'request',
+          url,
+          headerName: csrfHeaderName,
+          datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+          cookieToken: csrfToken,
+          headers: { ...options.headers }
+        };
         if (consoleEl) {
           console.debug('IAM csrf debug: preparing request', {
             url,
@@ -606,6 +622,7 @@
        const response = await fetch(url, options);
        if (!response.ok) {
           await logCsrfMismatch(response);
+
           throw new Error(`Request failed (${response.status})`);
         }
         const result = await response
@@ -616,6 +633,14 @@
         if (latestToken && consoleEl && consoleEl.dataset) {
           consoleEl.dataset.csrfToken = latestToken;
         }
+        window.lastCsrfDebug = {
+          version: '20250922b',
+          lastUpdated: Date.now(),
+          event: 'response-ok',
+          status: response.status,
+          datasetToken: consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+          cookieToken: latestToken
+        };
         return result;
       }
 
@@ -631,6 +656,13 @@
           return consoleEl.dataset.csrfToken;
         }
         return null;
+      }
+
+      function syncCsrfTokenFromCookie() {
+        const latestToken = readCsrfToken();
+        if (latestToken && consoleEl && consoleEl.dataset) {
+          consoleEl.dataset.csrfToken = latestToken;
+        }
       }
 
       function readCsrfToken() {
