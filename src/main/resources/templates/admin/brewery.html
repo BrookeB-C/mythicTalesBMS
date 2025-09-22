@@ -75,6 +75,21 @@
           createUserDialog ? createUserDialog.querySelector('[data-action="cancel"]') : null;
         let createUserSubmitting = false;
 
+        if (createUserForm) {
+          createUserForm.addEventListener('submit', handleCreateUserSubmit);
+          const roleSelect = createUserForm.querySelector('select[name="role"]');
+          if (roleSelect) {
+            roleSelect.value = 'TAPROOM_USER';
+          }
+        }
+        if (createUserCancelButton) {
+          createUserCancelButton.addEventListener('click', () => {
+            if (!createUserSubmitting) {
+              closeCreateUserDialog();
+            }
+          });
+        }
+
         customElements
           .whenDefined('mt-enterprise-console')
           .then(() => {
@@ -378,7 +393,7 @@
             url.searchParams.set('size', '25');
             const response = await fetch(url.toString(), {
               headers: { Accept: 'application/json' },
-              credentials: 'same-origin'
+              credentials: 'include'
             });
             if (!response.ok) {
               throw new Error(`Failed to load users (${response.status})`);
@@ -390,6 +405,7 @@
             if (selectDomain) {
               consoleEl.selectedDomain = 'iam';
             }
+            syncCsrfTokenFromCookie();
           } catch (error) {
             console.warn('Unable to load brewery users', error);
             if (consoleEl) {
@@ -478,7 +494,7 @@
           url.searchParams.set('activitySize', String(activitySize));
           const response = await fetch(url.toString(), {
             headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
+            credentials: 'include'
           });
           if (!response.ok) {
             throw new Error(`Summary fetch failed (${response.status})`);
@@ -488,6 +504,7 @@
           domains.keginventory = summary;
           consoleEl.domains = domains;
           consoleEl.selectedDomain = 'keginventory';
+          syncCsrfTokenFromCookie();
         } catch (error) {
           console.error('Unable to refresh keg inventory summary', error);
         }
@@ -534,13 +551,14 @@
           const url = `/api/v1/venues?breweryId=${breweryId}&size=200`;
           const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
+            credentials: 'include'
           });
           if (!response.ok) {
             throw new Error(`Venue load failed (${response.status})`);
           }
           const payload = await response.json();
           venuesCache.list = Array.isArray(payload.content) ? payload.content : [];
+          syncCsrfTokenFromCookie();
           return venuesCache.list;
         } catch (error) {
           console.error('Unable to load venues', error);
@@ -557,7 +575,7 @@
             'Content-Type': 'application/json',
             Accept: 'application/json'
           },
-          credentials: 'same-origin'
+          credentials: 'include'
         };
         const csrfToken = resolveCsrfToken();
         window.lastCsrfDebug = {
@@ -570,6 +588,15 @@
           cookieToken: csrfToken,
           headers: { ...options.headers }
         };
+        if (consoleEl) {
+          console.debug('IAM csrf debug: preparing request', {
+            url,
+            headerName: csrfHeaderName,
+            datasetToken: consoleEl.dataset ? consoleEl.dataset.csrfToken : null,
+            cookieToken: csrfToken,
+            headers: options.headers
+          });
+        }
         if (csrfToken) {
           options.headers[csrfHeaderName] = csrfToken;
           if (csrfHeaderName !== 'X-XSRF-TOKEN') {
@@ -600,6 +627,13 @@
             body: responseBody
           };
           console.warn('IAM csrf debug: non-OK response', window.lastCsrfDebug);
+          if (consoleEl) {
+            console.warn('IAM csrf debug: non-OK response', {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries())
+            });
+          }
           throw new Error(`Request failed (${response.status})`);
         }
         const result = await response
@@ -633,6 +667,13 @@
           return consoleEl.dataset.csrfToken;
         }
         return null;
+      }
+
+      function syncCsrfTokenFromCookie() {
+        const latestToken = readCsrfToken();
+        if (latestToken && consoleEl && consoleEl.dataset) {
+          consoleEl.dataset.csrfToken = latestToken;
+        }
       }
 
       function readCsrfToken() {
