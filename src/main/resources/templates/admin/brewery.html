@@ -2,6 +2,296 @@
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layouts/app :: layout('Brewery Control Center', 'brewery', 'Quick overview and navigation for brewery operations.', ~{::section[@id='page-content']})}">
 <section id="page-content">
+  <section th:if="${componentLibraryEnabled}" class="page-section">
+    <mt-enterprise-console
+        id="brewConsole"
+        th:attr="data-overrides=${consoleDataJson},
+                  data-selected-domain=${consoleSelectedDomain},
+                  data-brewery-id=${brewery != null ? brewery.id : ''},
+                  data-brewery-name=${brewery != null ? brewery.name : 'Brewery'}"></mt-enterprise-console>
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+      (function () {
+        const consoleEl = document.getElementById('brewConsole');
+        if (!consoleEl) {
+          return;
+        }
+        const overridesRaw = consoleEl.dataset.overrides || '{}';
+        const selectedDomainRaw = consoleEl.dataset.selectedDomain || '';
+        const breweryIdValue = consoleEl.dataset.breweryId || '';
+        const breweryName = consoleEl.dataset.breweryName || 'Brewery';
+
+        const venuesCache = { list: null, loading: false };
+        const queueSize = 6;
+        const activitySize = 5;
+
+        customElements
+          .whenDefined('mt-enterprise-console')
+          .then(() => {
+            try {
+              const parsed = JSON.parse(overridesRaw);
+              const merged = Object.assign({}, consoleEl.domains || {}, parsed);
+              consoleEl.domains = merged;
+              if (selectedDomainRaw) {
+                consoleEl.selectedDomain = selectedDomainRaw;
+              }
+            } catch (err) {
+              console.warn('Unable to hydrate brewery console', err);
+            }
+
+            const breweryId = breweryIdValue ? Number(breweryIdValue) : null;
+            if (breweryId) {
+              const url = `/api/v1/users?breweryId=${breweryId}&size=25`;
+              fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error(`Failed to load users (${response.status})`);
+                  }
+                  return response.json();
+                })
+                .then((payload) => {
+                  if (!payload || !consoleEl) {
+                    return;
+                  }
+                  const domain = buildIdentityDomainFromApi(payload, breweryName);
+                  const current = consoleEl.domains ? { ...consoleEl.domains } : {};
+                  consoleEl.domains = Object.assign(current, { iam: domain });
+                  consoleEl.selectedDomain = 'iam';
+                })
+                .catch((error) => {
+                  console.warn('Unable to load brewery users', error);
+                  if (consoleEl) {
+                    consoleEl.domains = Object.assign({}, consoleEl.domains || {});
+                  }
+                });
+            }
+          })
+          .catch((err) => console.error('Enterprise console not available', err));
+
+        consoleEl.addEventListener('enterprise-command', async (event) => {
+          const detail = event.detail || {};
+          const command = detail.command || {};
+          const kegId = command.kegId;
+          if (!kegId) {
+            window.alert('No eligible kegs for that action right now.');
+            return;
+          }
+
+          try {
+            switch (command.type) {
+              case 'assign': {
+                const venueId = await chooseVenue();
+                if (!venueId) {
+                  return;
+                }
+                await postJson('/api/v1/keg-inventory/assign', {
+                  kegId,
+                  venueId
+                });
+                window.alert('Keg assigned successfully.');
+                break;
+              }
+              case 'return': {
+                await postJson('/api/v1/keg-inventory/return', { kegId });
+                window.alert('Keg return recorded.');
+                break;
+              }
+              case 'clean': {
+                await postJson(`/api/v1/kegs/${kegId}/clean`, {});
+                window.alert('Keg marked as clean.');
+                break;
+              }
+              default:
+                window.alert('Action not yet supported in this prototype.');
+                return;
+            }
+            await refreshKegInventory();
+          } catch (error) {
+            console.error('Failed to execute command', error);
+            window.alert('Unable to complete that action.');
+          }
+        });
+
+        function buildIdentityDomainFromApi(payload, breweryName) {
+          const content = Array.isArray(payload?.content) ? payload.content : [];
+          const total = typeof payload?.totalElements === 'number' ? payload.totalElements : content.length;
+
+          const roleLabel = (role) => (role ? role.replace(/_/g, ' ').toUpperCase() : 'UNKNOWN');
+          const admins = content.filter((user) => user.role === 'BREWERY_ADMIN').length;
+          const taproomStaff = content.filter((user) => user.role && user.role.startsWith('TAPROOM')).length;
+          const barAdmins = content.filter((user) => user.role === 'BAR_ADMIN').length;
+
+          const queue = content.slice(0, 6).map((user) => ({
+            title: user.username,
+            status: roleLabel(user.role),
+            meta: user.taproomId
+              ? `Taproom ID ${user.taproomId}`
+              : user.barId
+                  ? `Bar ID ${user.barId}`
+                  : breweryName,
+            severity: user.role === 'BREWERY_ADMIN' ? 'warning' : 'default'
+          }));
+          if (!queue.length) {
+            queue.push({
+              title: 'No users found',
+              status: 'Action',
+              meta: 'Create accounts to unlock team workflows',
+              severity: 'alert'
+            });
+          }
+
+          const activity = content.slice(0, 4).map((user) => ({
+            time: '--',
+            summary: `${user.username} holds ${roleLabel(user.role)} access`,
+            badge: 'User'
+          }));
+          if (!activity.length) {
+            activity.push({ time: '--', summary: 'No identity updates yet', badge: 'Info' });
+          }
+
+          return {
+            key: 'iam',
+            title: 'Identity & Access',
+            breadcrumb: ['Mythic Tales', breweryName, 'Identity'],
+            contexts: [
+              `Brewery: ${breweryName}`,
+              `Admins: ${admins}`,
+              `Taproom staff: ${taproomStaff}`
+            ],
+            whatChanged: [
+              `${total} total accounts scoped to the brewery`,
+              `${barAdmins} bar admin${barAdmins === 1 ? '' : 's'} available`
+            ],
+            hero: [
+              { label: 'Team Members', value: String(total), detail: 'Accounts in scope' },
+              { label: 'Brewery Admins', value: String(admins), detail: 'Manage operations' },
+              { label: 'Taproom Staff', value: String(taproomStaff), detail: 'Front of house' }
+            ],
+            queue,
+            activity,
+            quickActions: [
+              { label: 'Manage Team', href: '/admin/brewery?tab=users' },
+              { label: 'Invite User', href: '/admin/brewery?tab=users' },
+              { label: 'Assign Taproom', href: '/admin/brewery?tab=users' }
+            ],
+            quickMeta: 'Identity shortcuts'
+          };
+        }
+      })();
+
+      async function refreshKegInventory() {
+        const breweryIdValue = consoleEl.dataset.breweryId || '';
+        if (!breweryIdValue) {
+          return;
+        }
+        try {
+          const url = new URL('/api/v1/keg-inventory/summary', window.location.origin);
+          url.searchParams.set('breweryId', breweryIdValue);
+          url.searchParams.set('queueSize', String(queueSize));
+          url.searchParams.set('activitySize', String(activitySize));
+          const response = await fetch(url.toString(), {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          });
+          if (!response.ok) {
+            throw new Error(`Summary fetch failed (${response.status})`);
+          }
+          const summary = await response.json();
+          const domains = consoleEl.domains ? { ...consoleEl.domains } : {};
+          domains.keginventory = summary;
+          consoleEl.domains = domains;
+          consoleEl.selectedDomain = 'keginventory';
+        } catch (error) {
+          console.error('Unable to refresh keg inventory summary', error);
+        }
+      }
+
+      async function chooseVenue() {
+        const breweryIdValue = consoleEl.dataset.breweryId || '';
+        if (!breweryIdValue) {
+          window.alert('No brewery context available.');
+          return null;
+        }
+        const venues = await loadVenues(breweryIdValue);
+        if (!venues.length) {
+          window.alert('No venues available for assignment.');
+          return null;
+        }
+        const options = venues
+          .map((venue, index) => `${index + 1}) ${venue.name} [${venue.id}]`)
+          .join('\n');
+        const choice = window.prompt(
+          'Select a venue for the keg assignment:\n' + options,
+          '1'
+        );
+        if (!choice) {
+          return null;
+        }
+        const idx = Number.parseInt(choice, 10) - 1;
+        if (Number.isNaN(idx) || idx < 0 || idx >= venues.length) {
+          window.alert('Invalid selection.');
+          return null;
+        }
+        return venues[idx].id;
+      }
+
+      async function loadVenues(breweryId) {
+        if (venuesCache.list) {
+          return venuesCache.list;
+        }
+        if (venuesCache.loading) {
+          return [];
+        }
+        venuesCache.loading = true;
+        try {
+          const url = `/api/v1/venues?breweryId=${breweryId}&size=200`;
+          const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          });
+          if (!response.ok) {
+            throw new Error(`Venue load failed (${response.status})`);
+          }
+          const payload = await response.json();
+          venuesCache.list = Array.isArray(payload.content) ? payload.content : [];
+          return venuesCache.list;
+        } catch (error) {
+          console.error('Unable to load venues', error);
+          return [];
+        } finally {
+          venuesCache.loading = false;
+        }
+      }
+
+      async function postJson(url, body) {
+        const options = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          credentials: 'same-origin'
+        };
+        if (body && Object.keys(body).length > 0) {
+          options.body = JSON.stringify(body);
+        }
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status})`);
+        }
+        return response
+          .text()
+          .then((text) => (text ? JSON.parse(text) : {}))
+          .catch(() => ({}));
+      }
+      /*]]>*/
+    </script>
+  </section>
+
+  <th:block th:unless="${componentLibraryEnabled}">
   <section class="page-section">
     <div class="card-grid">
       <article class="metric-card">
@@ -459,5 +749,6 @@
       </article>
     </div>
   </section>
+  </th:block>
 </section>
 </html>

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "lib": ["DOM", "ES2020"],
+    "declaration": true,
+    "declarationDir": "dist/types",
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist/types",
+    "strict": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}

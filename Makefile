@@ -36,6 +36,8 @@ help:
 	@echo "  prod_up       - Start prod Postgres and Kafka"
 	@echo "  prod_stop     - Stop prod Postgres and Kafka"
 	@echo "  setup-commit-template - Configure git commit.template to .gitmessage.txt"
+	@echo "  ui-build      - Install deps and build the ui-library bundle"
+	@echo "  ui-clean      - Remove ui-library build artifacts"
 
 run:
 	mvn spring-boot:run
@@ -51,6 +53,7 @@ package:
 
 clean:
 	mvn clean
+	rm -rf src/main/resources/static/ui/
 
 format:
 	mvn -q spotless:apply
@@ -116,3 +119,9 @@ prod_stop: kafka-down db-stop-prod
 
 setup-commit-template:
 	git config commit.template .gitmessage.txt
+
+ui-build:
+	cd ui-library && export PATH="/opt/homebrew/opt/node@18/bin:$$PATH" && npm install && npm run build
+
+ui-clean:
+	rm -rf ui-library/node_modules ui-library/package-lock.json src/main/resources/static/ui/

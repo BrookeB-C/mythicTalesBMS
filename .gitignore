@@ -3,6 +3,10 @@ target/
 **/target/
 build/
 out/
+node_modules/
+ui-library/node_modules/
+ui-library/dist/
+ui-library/storybook-static/
 # Ignore bin contents by default but allow scripts
 bin/*
 !bin/*.sh

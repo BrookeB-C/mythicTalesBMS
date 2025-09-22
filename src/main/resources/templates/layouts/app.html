@@ -5,9 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title th:text="${pageTitle != null ? pageTitle + ' · Mythic Tales BMS' : 'Mythic Tales BMS'}">Mythic Tales BMS</title>
   <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <th:block th:if="${@environment.getProperty('bms.ui.component-library.enabled','false')} == 'true'">
+    <script type="module" th:src="@{/ui/mt-ui.es.js}"></script>
+    <script nomodule th:src="@{/ui/mt-ui.umd.js}"></script>
+  </th:block>
 </head>
-<body class="app-shell">
-  <div class="app-frame">
+<body th:with="enterpriseShell=${@environment.getProperty('bms.ui.component-library.enabled','false') == 'true' and currentUser != null and currentUser.role == T(com.mythictales.bms.taplist.domain.Role).BREWERY_ADMIN}"
+      th:classappend="${enterpriseShell} ? ' enterprise-shell' : ' app-shell'">
+  <div th:if="${enterpriseShell}" class="enterprise-shell-wrap">
+    <main class="enterprise-shell-content" th:insert="${content}"></main>
+  </div>
+
+  <div class="app-frame" th:unless="${enterpriseShell}">
     <aside class="app-nav" aria-label="Primary navigation">
       <div class="nav-brand">
         <div class="brand-mark">Mythic Tales</div>

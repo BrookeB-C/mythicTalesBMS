@@ -1,6 +1,9 @@
 package com.mythictales.bms.taplist.controller;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.core.env.Environment;
@@ -11,6 +14,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mythictales.bms.taplist.domain.Bar;
 import com.mythictales.bms.taplist.domain.Beer;
 import com.mythictales.bms.taplist.domain.Keg;
@@ -46,6 +51,7 @@ public class AdminBreweryController {
   private final KegSizeSpecRepository sizes;
   private final Environment env;
   private final PasswordEncoder passwordEncoder;
+  private final ObjectMapper objectMapper;
 
   public AdminBreweryController(
       TaproomRepository taprooms,
@@ -58,7 +64,8 @@ public class AdminBreweryController {
       BeerRepository beers,
       KegSizeSpecRepository sizes,
       Environment env,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      ObjectMapper objectMapper) {
     this.taprooms = taprooms;
     this.kegs = kegs;
     this.venues = venues;
@@ -70,6 +77,7 @@ public class AdminBreweryController {
     this.sizes = sizes;
     this.env = env;
     this.passwordEncoder = passwordEncoder;
+    this.objectMapper = objectMapper;
   }
 
   @GetMapping
@@ -81,6 +89,9 @@ public class AdminBreweryController {
       @RequestParam(value = "tab", required = false) String tab,
       @RequestParam(value = "q", required = false) String q,
       Model model) {
+    boolean componentLibraryEnabled =
+        env.getProperty("bms.ui.component-library.enabled", "false").equalsIgnoreCase("true");
+
     if (user != null && user.getBreweryId() != null) {
       var brewery = breweries.findById(user.getBreweryId()).orElse(null);
       model.addAttribute("brewery", brewery);
@@ -242,6 +253,25 @@ public class AdminBreweryController {
       model.addAttribute("distributedKegCount", distributedKegs);
       model.addAttribute("returnedKegCount", returnedKegCount);
       model.addAttribute("breweryUserCount", breweryUserCount);
+
+      if (componentLibraryEnabled) {
+        model.addAttribute("consoleSelectedDomain", "iam");
+        model.addAttribute(
+            "consoleDataJson",
+            buildConsoleDataJson(
+                brewery,
+                trList,
+                taproomVenueIds,
+                unassigned,
+                assigned,
+                returned,
+                userList,
+                activeTapHandles,
+                availableKegs,
+                distributedKegs,
+                returnedKegCount,
+                breweryUserCount));
+      }
     } else {
       model.addAttribute("taprooms", java.util.List.of());
       model.addAttribute("kegs", java.util.List.of());
@@ -258,10 +288,29 @@ public class AdminBreweryController {
       model.addAttribute("distributedKegCount", 0);
       model.addAttribute("returnedKegCount", 0);
       model.addAttribute("breweryUserCount", 0);
+      if (componentLibraryEnabled) {
+        model.addAttribute("consoleSelectedDomain", "iam");
+        model.addAttribute(
+            "consoleDataJson",
+            buildConsoleDataJson(
+                null,
+                java.util.List.of(),
+                java.util.Map.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                0,
+                0,
+                0,
+                0,
+                0));
+      }
     }
     model.addAttribute("allStatuses", KegStatus.values());
     model.addAttribute("tab", tab);
     model.addAttribute("q", q);
+    model.addAttribute("componentLibraryEnabled", componentLibraryEnabled);
     return "admin/brewery";
   }
 
@@ -361,6 +410,311 @@ public class AdminBreweryController {
     redirectAttributes.addFlashAttribute(
         "successMessage", "User %s created.".formatted(trimmedUsername));
     return redirect;
+  }
+
+  private String buildConsoleDataJson(
+      com.mythictales.bms.taplist.domain.Brewery brewery,
+      List<com.mythictales.bms.taplist.domain.Taproom> taprooms,
+      Map<Long, Long> taproomVenueIds,
+      List<Keg> unassigned,
+      List<Keg> assigned,
+      List<Keg> returned,
+      List<com.mythictales.bms.taplist.domain.UserAccount> breweryUsers,
+      int activeTapHandles,
+      int availableKegs,
+      int distributedKegs,
+      int returnedKegCount,
+      int breweryUserCount) {
+    Map<String, Object> overrides = new LinkedHashMap<>();
+    overrides.put(
+        "keginventory",
+        buildKegInventoryDomain(
+            brewery,
+            unassigned,
+            assigned,
+            returned,
+            availableKegs,
+            distributedKegs,
+            returnedKegCount));
+    overrides.put(
+        "taproom",
+        buildTaproomDomain(brewery, taprooms, taproomVenueIds, activeTapHandles, breweryUserCount));
+    overrides.put(
+        "iam",
+        buildIdentityDomain(brewery, breweryUsers, breweryUserCount));
+
+    try {
+      return objectMapper.writeValueAsString(overrides);
+    } catch (JsonProcessingException ex) {
+      return "{}";
+    }
+  }
+
+  private Map<String, Object> buildKegInventoryDomain(
+      com.mythictales.bms.taplist.domain.Brewery brewery,
+      List<Keg> unassigned,
+      List<Keg> assigned,
+      List<Keg> returned,
+      int availableKegs,
+      int distributedKegs,
+      int returnedKegCount) {
+    String breweryName = brewery != null ? brewery.getName() : "Brewery";
+    Map<String, Object> domain = new LinkedHashMap<>();
+    domain.put("key", "keginventory");
+    domain.put("title", "Keg Inventory");
+    domain.put(
+        "breadcrumb",
+        List.of("Mythic Tales", breweryName, "Keg Inventory"));
+    domain.put(
+        "contexts",
+        List.of(
+            "Unassigned: " + availableKegs,
+            "Distributed: " + distributedKegs,
+            "Returned: " + returnedKegCount));
+    domain.put(
+        "whatChanged",
+        List.of(
+            availableKegs + " kegs ready for assignment",
+            distributedKegs + " in market, " + returnedKegCount + " returned"));
+
+    List<Map<String, Object>> hero = new ArrayList<>();
+    hero.add(heroCard("Available Kegs", String.valueOf(availableKegs), "On-site inventory", null));
+    hero.add(heroCard("Distributed", String.valueOf(distributedKegs), "Kegs in market", null));
+    hero.add(heroCard("Returns", String.valueOf(returnedKegCount), "Awaiting clean", null));
+    domain.put("hero", hero);
+
+    List<Map<String, Object>> queue = new ArrayList<>();
+    unassigned.stream().limit(4).forEach(keg -> queue.add(kegQueueItem("Ready", keg, "default")));
+    assigned.stream().limit(2).forEach(keg -> queue.add(kegQueueItem("Distributed", keg, "warning")));
+    domain.put("queue", queue);
+
+    List<Map<String, Object>> activity = new ArrayList<>();
+    assigned.stream()
+        .limit(3)
+        .map(keg -> activityItem("--", assignSummary(keg), "Assigned"))
+        .forEach(activity::add);
+    returned.stream()
+        .limit(2)
+        .map(keg -> activityItem("--", "Returned keg " + safeSerial(keg) + " for cleaning", "Returned"))
+        .forEach(activity::add);
+    if (activity.isEmpty()) {
+      activity.add(activityItem("--", "No recent keg transfers logged", "Info"));
+    }
+    domain.put("activity", activity);
+
+    domain.put(
+        "quickActions",
+        List.of("Assign Keg", "Log Return", "Schedule Cleaning", "Create Transfer"));
+    domain.put("quickMeta", "BrewAdmin shortcuts");
+    return domain;
+  }
+
+  private Map<String, Object> buildTaproomDomain(
+      com.mythictales.bms.taplist.domain.Brewery brewery,
+      List<com.mythictales.bms.taplist.domain.Taproom> taprooms,
+      Map<Long, Long> taproomVenueIds,
+      int activeTapHandles,
+      int breweryUserCount) {
+    String breweryName = brewery != null ? brewery.getName() : "Brewery";
+    Map<String, Object> domain = new LinkedHashMap<>();
+    domain.put("key", "taproom");
+    domain.put("title", "Taproom Operations");
+    domain.put("breadcrumb", List.of("Mythic Tales", breweryName, "Taprooms"));
+    domain.put(
+        "contexts",
+        List.of(
+            "Brewery: " + breweryName,
+            "Taprooms: " + taprooms.size(),
+            "Team: " + breweryUserCount));
+    domain.put(
+        "whatChanged",
+        List.of(
+            taprooms.size() + " taprooms active",
+            activeTapHandles + " lines pouring"));
+
+    List<Map<String, Object>> hero = new ArrayList<>();
+    hero.add(heroCard("Active Taprooms", String.valueOf(taprooms.size()), "Operational venues", null));
+    hero.add(heroCard("Tap Handles", String.valueOf(activeTapHandles), "Pouring now", null));
+    hero.add(heroCard("Staff", String.valueOf(breweryUserCount), "Brew-admin scoped", null));
+    domain.put("hero", hero);
+
+    List<Map<String, Object>> queue = new ArrayList<>();
+    taprooms.stream()
+        .limit(5)
+        .forEach(
+            trm ->
+                queue.add(
+                    Map.of(
+                        "title",
+                        trm.getName(),
+                        "status",
+                        taproomVenueIds.containsKey(trm.getId()) ? "Linked" : "Needs Venue",
+                        "meta",
+                        "Taproom ID " + trm.getId(),
+                        "severity",
+                        taproomVenueIds.containsKey(trm.getId()) ? "default" : "warning")));
+    if (queue.isEmpty()) {
+      queue.add(
+          Map.of(
+              "title", "No taprooms available",
+              "status", "Action",
+              "meta", "Add taproom to unlock operations",
+              "severity", "alert"));
+    }
+    domain.put("queue", queue);
+
+    List<Map<String, Object>> activity = new ArrayList<>();
+    taprooms.stream()
+        .limit(3)
+        .forEach(
+            trm ->
+                activity.add(
+                    activityItem(
+                        "--",
+                        "Taproom " + trm.getName() + " ready for scheduling",
+                        "Taproom")));
+    if (activity.isEmpty()) {
+      activity.add(activityItem("--", "No taproom updates captured", "Info"));
+    }
+    domain.put("activity", activity);
+
+    domain.put(
+        "quickActions",
+        List.of("Open Taproom", "Update Taplist", "Assign Crew", "Log Shift Note"));
+    domain.put("quickMeta", "Taproom coordination");
+    return domain;
+  }
+
+  private Map<String, Object> buildIdentityDomain(
+      com.mythictales.bms.taplist.domain.Brewery brewery,
+      List<com.mythictales.bms.taplist.domain.UserAccount> breweryUsers,
+      int breweryUserCount) {
+    String breweryName = brewery != null ? brewery.getName() : "Brewery";
+    Map<String, Object> domain = new LinkedHashMap<>();
+    domain.put("key", "iam");
+    domain.put("title", "Identity & Access");
+    domain.put("breadcrumb", List.of("Mythic Tales", breweryName, "Identity"));
+
+    long breweryAdmins =
+        breweryUsers.stream().filter(u -> u.getRole() == Role.BREWERY_ADMIN).count();
+    long taproomStaff =
+        breweryUsers.stream().filter(u -> u.getRole().name().startsWith("TAPROOM")).count();
+    long barAdmins =
+        breweryUsers.stream().filter(u -> u.getRole() == Role.BAR_ADMIN).count();
+
+    domain.put(
+        "contexts",
+        List.of(
+            "Brewery: " + breweryName,
+            "Brewery admins: " + breweryAdmins,
+            "Taproom staff: " + taproomStaff));
+    domain.put(
+        "whatChanged",
+        List.of(
+            breweryUserCount + " total accounts scoped to the brewery",
+            breweryAdmins + " admin(s) with elevated access"));
+
+    List<Map<String, Object>> hero = new ArrayList<>();
+    hero.add(heroCard("Team Members", String.valueOf(breweryUserCount), "Accounts in scope", null));
+    hero.add(heroCard("Brewery Admins", String.valueOf(breweryAdmins), "Manage operations", null));
+    hero.add(heroCard("Taproom Staff", String.valueOf(taproomStaff), "Front of house", null));
+    domain.put("hero", hero);
+
+    List<Map<String, Object>> queue = new ArrayList<>();
+    breweryUsers.stream()
+        .limit(6)
+        .forEach(
+            user ->
+                queue.add(
+                    Map.of(
+                        "title", user.getUsername(),
+                        "status", user.getRole().name().replace('_', ' '),
+                        "meta",
+                        user.getTaproom() != null
+                            ? "Taproom " + user.getTaproom().getName()
+                            : user.getBar() != null
+                                ? "Bar " + user.getBar().getName()
+                                : breweryName,
+                        "severity",
+                        user.getRole() == Role.BREWERY_ADMIN ? "warning" : "default")));
+    if (queue.isEmpty()) {
+      queue.add(
+          Map.of(
+              "title", "No users found",
+              "status", "Action",
+              "meta", "Create accounts to manage operations",
+              "severity", "alert"));
+    }
+    domain.put("queue", queue);
+
+    List<Map<String, Object>> activity = new ArrayList<>();
+    breweryUsers.stream()
+        .limit(4)
+        .forEach(
+            user ->
+                activity.add(
+                    activityItem(
+                        "--",
+                        user.getUsername() + " holds " + user.getRole().name().replace('_', ' ') + " access",
+                        "User")));
+    if (activity.isEmpty()) {
+      activity.add(activityItem("--", "No recent identity changes", "Info"));
+    }
+    domain.put("activity", activity);
+
+    List<Map<String, Object>> quickActions = new ArrayList<>();
+    quickActions.add(Map.of("label", "Manage Team", "href", "/admin/brewery?tab=users"));
+    quickActions.add(Map.of("label", "Invite User", "href", "/admin/brewery?tab=users"));
+    quickActions.add(Map.of("label", "Assign Taproom", "href", "/admin/brewery?tab=users"));
+    domain.put("quickActions", quickActions);
+    domain.put("quickMeta", "Identity shortcuts");
+    return domain;
+  }
+
+  private Map<String, Object> heroCard(String label, String value, String detail, String trend) {
+    Map<String, Object> card = new LinkedHashMap<>();
+    card.put("label", label);
+    card.put("value", value);
+    if (detail != null) {
+      card.put("detail", detail);
+    }
+    if (trend != null) {
+      card.put("trend", trend);
+    }
+    return card;
+  }
+
+  private Map<String, Object> kegQueueItem(String status, Keg keg, String severity) {
+    String beerName = keg.getBeer() != null ? keg.getBeer().getName() : "--";
+    return Map.of(
+        "title",
+            safeSerial(keg) + " · " + beerName,
+        "status",
+        status,
+        "meta",
+        "Status: " + keg.getStatus(),
+        "severity",
+        severity);
+  }
+
+  private Map<String, Object> activityItem(String time, String summary, String badge) {
+    Map<String, Object> activity = new LinkedHashMap<>();
+    activity.put("time", time);
+    activity.put("summary", summary);
+    activity.put("badge", badge);
+    return activity;
+  }
+
+  private String assignSummary(Keg keg) {
+    String venue = keg.getAssignedVenue() != null ? keg.getAssignedVenue().getName() : "venue";
+    return "Assigned " + safeSerial(keg) + " to " + venue;
+  }
+
+  private String safeSerial(Keg keg) {
+    if (keg == null) {
+      return "--";
+    }
+    return keg.getSerialNumber() != null ? keg.getSerialNumber() : "Keg " + keg.getId();
   }
 
   @PostMapping("/users/{userId}/delete")

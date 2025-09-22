@@ -56,6 +56,7 @@ Deliver a cohesive, enterprise-grade desktop experience for Mythic Tales BMS ope
 - Operational Queue: Keg prep/cleaning backlog and return processing.
 - Recent Activity: Tap/untap events, shipping confirmations.
 - Quick Actions: Scan keg, assign to route, mark maintenance.
+- API support: `GET /api/v1/keg-inventory/summary` provides hero metrics, queue, activity, and quick-action metadata scoped to a brewery.
 
 ### Catalog (`/console/catalog`)
 - Hero KPIs: Active SKUs, seasonal lineup readiness, compliance checklist status.
@@ -132,7 +133,8 @@ Deliver a cohesive, enterprise-grade desktop experience for Mythic Tales BMS ope
 - Coordinate with compliance on brand/color approval for external auditors.
 
 ## Prototype
-- HTML shell and interaction prototype lives at `src/main/resources/static/prototypes/enterprise-desktop.html`.
-- Uses shared styling in `src/main/resources/static/css/enterprise-prototype.css` to demonstrate navigation, hero KPIs, queues, activity feed, and quick actions for every domain.
+- Component-driven prototype lives at `src/main/resources/static/prototypes/enterprise-desktop.html` and renders `<mt-enterprise-console>` from the shared library.
+- Bundled assets (`/ui/mt-ui.es.js`, `/ui/mt-ui.umd.js`) are produced by `ui-library` builds; reload the page after running `npm run build` to pick up changes.
 - Load via Spring Boot static resources (`http://localhost:8080/prototypes/enterprise-desktop.html`) once the app is running.
-- Toggle density, open the command palette, and trigger quick action toasts to validate interaction principles.
+- Toggle density, open the command palette, and trigger quick action toasts inside the component to validate interaction principles.
+- Brewery Admin view hydrates the Identity console from `/api/v1/users?breweryId=…`; other domains currently use server-provided data placeholders.

@@ -56,3 +56,6 @@ bms:
       enabled: ${BMS_KAFKA_SAMPLE_ENABLED:false}
       brewery-id: ${BMS_KAFKA_SAMPLE_BREWERY:00000000-0000-0000-0000-000000000001}
       facility-id: ${BMS_KAFKA_SAMPLE_FACILITY:00000000-0000-0000-0000-000000000010}
+  ui:
+    component-library:
+      enabled: ${BMS_UI_COMPONENT_LIBRARY_ENABLED:true}

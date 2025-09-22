@@ -32,6 +32,13 @@ Establish a reusable, accessibility-first component library that encapsulates th
   - TypeScript for type safety and IDE support.
   - Vite build pipeline targeting ES2019 + module/nomodule bundles, plus CSS extraction.
   - Storybook for documentation and visual review.
+- **Workspace:**
+  - `ui-library/` (Node 18, npm). Build outputs copy to `src/main/resources/static/ui/` for Spring to serve.
+  - Key scripts:
+    - `npm run dev` — Vite dev server with hot module reload.
+    - `npm run build` — Type check + bundle `mt-ui.es.js` (module) and `mt-ui.umd.js` (legacy) directly into Spring static assets.
+    - `npm run storybook` / `npm run build-storybook` — Component docs and visual review.
+    - `npm run test` — Vitest suite for Web Component logic.
 - **Packaging:**
   - Publish as internal npm package (`@mythic-tales/ui-shell`).
   - Provide CDN-friendly distribution via `/static/vendor` until package registry is ready.
@@ -42,8 +49,8 @@ Establish a reusable, accessibility-first component library that encapsulates th
 
 ## Release & Rollout Plan
 1. **Foundations Sprint**
-   - Finalize tokens; implement `mt-app-shell` skeleton using existing prototype styles.
-   - Set up build/test tooling (Vite, Storybook, Playwright for a11y snapshots).
+   - Finalize tokens; implement `mt-enterprise-console` shell leveraging prototype styles.
+   - Set up build/test tooling (Vite, Storybook, Vitest, axe-pa11y snapshots planned).
 2. **Pilot Domain Migration**
    - Adopt in Taproom landing page template; measure performance and authoring experience.
    - Gather feedback from UI/QA/Accessibility.
@@ -64,6 +71,14 @@ Establish a reusable, accessibility-first component library that encapsulates th
 - Component library owned by UI/Frontend guild (to be defined); release cadence tied to sprint reviews.
 - Change requests require accessibility review and Storybook documentation.
 - Semantic versioning enforced; breaking changes need migration notes and deprecation policy.
+
+## Developer Workflow
+- Ensure Node 18 is available (`brew install node@18` on macOS; export `PATH="/opt/homebrew/opt/node@18/bin:$PATH"`).
+- Install dependencies once via `npm install` inside `ui-library/`.
+- Use `npm run dev` during component iteration; Storybook reflects saved changes live.
+- Run `npm run build` before committing to refresh `/static/ui` bundles consumed by Spring.
+- Toggle `bms.ui.component-library.enabled` (`application.yml` or `BMS_UI_COMPONENT_LIBRARY_ENABLED`) to switch between legacy Thymeleaf fragments and the web component shell. When enabled, `layouts/app.html` injects the bundled assets.
+- For parity validation, load `http://localhost:8080/prototypes/enterprise-desktop.html` or the pilot Thymeleaf page to compare against design mocks.
 
 ## Dependencies & Risks
 - Need npm registry or GitHub Packages for distribution (coordinate with Platform/Data team).

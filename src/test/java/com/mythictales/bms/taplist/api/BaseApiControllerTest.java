@@ -2,6 +2,9 @@ package com.mythictales.bms.taplist.api;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -32,13 +35,22 @@ public abstract class BaseApiControllerTest {
                   NativeWebRequest webRequest,
                   WebDataBinderFactory binderFactory)
                   throws Exception {
-                return null; // allow controller to receive null principal in tests
+                Object principal =
+                    webRequest.getAttribute("currentUser", NativeWebRequest.SCOPE_REQUEST);
+                return principal;
               }
             })
+        .setMessageConverters(new HttpMessageConverter[] {mappingJacksonConverter()})
         // Use the API exception handler to provide consistent Problem JSON
         .setControllerAdvice(new com.mythictales.bms.taplist.config.RestExceptionHandler())
         // Print exchanges to aid debugging during failures
         .alwaysDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
         .build();
+  }
+
+  private MappingJackson2HttpMessageConverter mappingJacksonConverter() {
+    var objectMapper = Jackson2ObjectMapperBuilder.json().build();
+    objectMapper.findAndRegisterModules();
+    return new MappingJackson2HttpMessageConverter(objectMapper);
   }
 }
