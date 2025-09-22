@@ -591,15 +591,9 @@
         if (body && Object.keys(body).length > 0) {
           options.body = JSON.stringify(body);
         }
-        const response = await fetch(url, options);
-        if (!response.ok) {
-          if (consoleEl) {
-            console.warn('IAM csrf debug: non-OK response', {
-              status: response.status,
-              statusText: response.statusText,
-              headers: Object.fromEntries(response.headers.entries())
-            });
-          }
+       const response = await fetch(url, options);
+       if (!response.ok) {
+          await logCsrfMismatch(response);
           throw new Error(`Request failed (${response.status})`);
         }
         const result = await response
@@ -639,6 +633,28 @@
           }
         }
         return null;
+      }
+
+      async function logCsrfMismatch(response) {
+        const headers = Object.fromEntries(response.headers.entries());
+        const latestCookie = readCsrfToken();
+        const datasetToken = consoleEl && consoleEl.dataset ? consoleEl.dataset.csrfToken : null;
+        let responseBody;
+        try {
+          responseBody = await response.clone().json();
+        } catch (_) {
+          responseBody = await response.text();
+        }
+        const debugPayload = {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+          datasetToken,
+          cookieToken: latestCookie,
+          body: responseBody
+        };
+        window.lastCsrfDebug = debugPayload;
+        console.warn('IAM csrf debug: non-OK response', debugPayload);
       }
       /*]]>*/
     </script>
